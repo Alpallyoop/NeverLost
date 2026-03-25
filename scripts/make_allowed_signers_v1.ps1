@@ -1,21 +1,19 @@
 param([Parameter(Mandatory=$true)][string]$RepoRoot)
+
 $ErrorActionPreference="Stop"
 Set-StrictMode -Version Latest
-. (Join-Path $PSScriptRoot "_lib_neverlost_v1.ps1")
 
-$trust = Join-Path $RepoRoot "proofs\trust\trust_bundle.json"
-$out   = Join-Path $RepoRoot "proofs\trust\allowed_signers"
-$rcpt  = Join-Path $RepoRoot "proofs\receipts\neverlost.ndjson"
+function Die([string]$m){ throw $m }
 
-[void](NL-WriteAllowedSigners $trust $RepoRoot $out)
+$RepoRoot   = (Resolve-Path -LiteralPath $RepoRoot).Path
+$ScriptsDir = Join-Path $RepoRoot "scripts"
+$LibPath    = Join-Path $ScriptsDir "_lib_neverlost_v1.ps1"
+if(-not (Test-Path -LiteralPath $LibPath -PathType Leaf)){ Die ("MISSING_LIB: " + $LibPath) }
 
-NL-WriteReceipt $rcpt @{
-  schema="neverlost.receipt.v1"
-  time_utc=(Get-Date).ToUniversalTime().ToString("o")
-  action="make_allowed_signers"
-  ok=$true
-  hashes=@{
-    trust_bundle_sha256=(NL-Sha256HexPath $trust)
-    allowed_signers_sha256=(NL-Sha256HexPath $out)
-  }
-}
+. $LibPath
+
+# Uses compat tail override (last definition wins)
+$asPath = NL-WriteAllowedSignersFromTrust $RepoRoot
+if(-not (Test-Path -LiteralPath $asPath -PathType Leaf)){ Die ("ALLOWED_SIGNERS_MISSING_AFTER_WRITE: " + $asPath) }
+
+Write-Host ("ALLOWED_SIGNERS_OK: " + $asPath) -ForegroundColor Green

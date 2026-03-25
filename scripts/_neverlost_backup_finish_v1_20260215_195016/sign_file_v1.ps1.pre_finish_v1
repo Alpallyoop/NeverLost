@@ -1,0 +1,54 @@
+param(
+  [Parameter(Mandatory=$true)][string]$RepoRoot,
+  [Parameter(Mandatory=$true)][string]$FilePath,
+  [Parameter(Mandatory=$true)][string]$Namespace,
+  [Parameter(Mandatory=$true)][string]$Principal,
+  [Parameter(Mandatory=$true)][string]$KeyId,
+  [string]$PrivateKeyPath = ""
+)
+
+$ErrorActionPreference="Stop"
+Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot "_lib_neverlost_v1.ps1")
+
+if (-not (Test-Path -LiteralPath $FilePath -PathType Leaf)) { throw "File not found: $FilePath" }
+if ([string]::IsNullOrWhiteSpace($Namespace)) { throw "Namespace is required." }
+NL-AssertPrincipal $Principal
+NL-AssertKeyId $KeyId
+
+if ([string]::IsNullOrWhiteSpace($PrivateKeyPath)) {
+  $PrivateKeyPath = Join-Path $RepoRoot "proofs\keys\watchtower_authority_ed25519"
+}
+if (-not (Test-Path -LiteralPath $PrivateKeyPath -PathType Leaf)) { throw "Private key not found: $PrivateKeyPath" }
+
+$ssh = NL-ResolveSshKeygen
+
+$sigPath = ($FilePath + ".sig")
+
+# ssh-keygen -Y sign -f <privatekey> -n <namespace> <file>
+& $ssh -Y sign -f $PrivateKeyPath -n $Namespace $FilePath | Out-Null
+
+if (-not (Test-Path -LiteralPath $sigPath -PathType Leaf)) { throw "Signature was not created: $sigPath" }
+
+$rcpt = Join-Path $RepoRoot "proofs\receipts\neverlost.ndjson"
+NL-WriteReceipt $rcpt @{
+  schema="neverlost.receipt.v1"
+  time_utc=(Get-Date).ToUniversalTime().ToString("o")
+  action="sign_file"
+  ok=$true
+  inputs=@{
+    file=$FilePath
+    sig=$sigPath
+    namespace=$Namespace
+    principal=$Principal
+    key_id=$KeyId
+    key=$PrivateKeyPath
+    ssh_keygen=$ssh
+  }
+  hashes=@{
+    file_sha256=(NL-Sha256HexPath $FilePath)
+    sig_sha256=(NL-Sha256HexPath $sigPath)
+  }
+}
+
+Write-Host ("OK: signed => " + $sigPath) -ForegroundColor Green

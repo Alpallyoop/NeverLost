@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NeverLost trust_bundle.json v1",
+  "type": "object",
+  "required": ["version","authorities"],
+  "properties": {
+    "version": { "const": 1 },
+    "authorities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["principal","key_id","alg","pubkey_path","pubkey_sha256","allowed_namespaces"],
+        "properties": {
+          "principal": { "type": "string" },
+          "key_id": { "type": "string" },
+          "alg": { "type": "string", "enum": ["ssh-ed25519"] },
+          "pubkey_path": { "type": "string" },
+          "pubkey_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "allowed_namespaces": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

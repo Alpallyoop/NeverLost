@@ -1,0 +1,88 @@
+param(
+  [Parameter(Mandatory=$true)][string]$RepoRoot,
+  [Parameter(Mandatory=$true)][string]$FilePath,
+  [Parameter(Mandatory=$true)][string]$SigPath,
+  [Parameter(Mandatory=$true)][string]$Namespace,
+  [Parameter(Mandatory=$true)][string]$Principal,
+  [int]$TimeoutMs = 15000
+)
+
+$ErrorActionPreference="Stop"
+Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot "_lib_neverlost_v1.ps1")
+
+if (-not (Test-Path -LiteralPath $FilePath -PathType Leaf)) { throw "File not found: $FilePath" }
+if (-not (Test-Path -LiteralPath $SigPath  -PathType Leaf)) { throw "Sig not found:  $SigPath" }
+
+NL-AssertPrincipal $Principal
+if ([string]::IsNullOrWhiteSpace($Namespace)) { throw "Namespace is required." }
+
+$allowed = Join-Path $RepoRoot "proofs\trust\allowed_signers"
+if (-not (Test-Path -LiteralPath $allowed -PathType Leaf)) { throw "allowed_signers not found: $allowed" }
+
+$ssh = NL-ResolveSshKeygen
+
+$ok = $false
+$errMsg = ""
+$stage = ""
+$rFind = $null
+$rVer  = $null
+
+try {
+  $stage = "find-principals"
+  $argsFind = ('-Y find-principals -f "{0}" -s "{1}" "{2}"' -f $allowed, $SigPath, $FilePath)
+  $rFind = NL-InvokeProc $ssh $argsFind $TimeoutMs
+  if ($rFind.TimedOut) { throw ("ssh-keygen find-principals TIMEOUT after {0}ms. stderr={1} stdout={2}" -f $TimeoutMs, $rFind.Stderr, $rFind.Stdout) }
+  if ($rFind.ExitCode -ne 0) { throw ("ssh-keygen find-principals failed exit_code={0} stderr={1} stdout={2}" -f $rFind.ExitCode, $rFind.Stderr, $rFind.Stdout) }
+
+  $stage = "verify"
+  $argsVerify = ('-Y verify -f "{0}" -I "{1}" -n "{2}" -s "{3}" "{4}"' -f $allowed, $Principal, $Namespace, $SigPath, $FilePath)
+  $rVer = NL-InvokeProc $ssh $argsVerify $TimeoutMs
+  if ($rVer.TimedOut) { throw ("ssh-keygen verify TIMEOUT after {0}ms. stderr={1} stdout={2}" -f $TimeoutMs, $rVer.Stderr, $rVer.Stdout) }
+  if ($rVer.ExitCode -ne 0) { throw ("ssh-keygen verify failed exit_code={0} stderr={1} stdout={2}" -f $rVer.ExitCode, $rVer.Stderr, $rVer.Stdout) }
+
+  $ok = $true
+} catch {
+  $ok = $false
+  $errMsg = ("stage=" + $stage + " :: " + $_.Exception.Message)
+}
+
+$rcpt = Join-Path $RepoRoot "proofs\receipts\neverlost.ndjson"
+NL-WriteReceipt $rcpt @{
+  schema="neverlost.receipt.v1"
+  time_utc=(Get-Date).ToUniversalTime().ToString("o")
+  action="verify_sig"
+  ok=$ok
+  inputs=@{
+    file=$FilePath
+    sig=$SigPath
+    namespace=$Namespace
+    principal=$Principal
+    timeout_ms=$TimeoutMs
+    ssh_keygen=$ssh
+  }
+  hashes=@{
+    file_sha256=(NL-Sha256HexPath $FilePath)
+    sig_sha256=(NL-Sha256HexPath $SigPath)
+    allowed_signers_sha256=(NL-Sha256HexPath $allowed)
+  }
+  result=@{
+    stage=$stage
+    find_principals=@{
+      timed_out=([bool]($rFind -and $rFind.TimedOut))
+      exit_code=([int]($rFind.ExitCode))
+      stdout=([string]($rFind.Stdout))
+      stderr=([string]($rFind.Stderr))
+    }
+    verify=@{
+      timed_out=([bool]($rVer -and $rVer.TimedOut))
+      exit_code=([int]($rVer.ExitCode))
+      stdout=([string]($rVer.Stdout))
+      stderr=([string]($rVer.Stderr))
+    }
+  }
+  error=$errMsg
+}
+
+if (-not $ok) { throw ("VERIFY FAIL: " + $errMsg) }
+Write-Host "OK: verify_sig passed" -ForegroundColor Green

@@ -1,0 +1,57 @@
+param([Parameter(Mandatory=$true)][string]$RepoRoot)
+$ErrorActionPreference="Stop"
+Set-StrictMode -Version Latest
+
+function Die([string]$m){ throw $m }
+function Write-Utf8NoBomLf([string]$Path,[string]$Text){
+  $dir = Split-Path -Parent $Path
+  if ($dir -and -not (Test-Path -LiteralPath $dir -PathType Container)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+  $t = $Text -replace "`r`n","`n" -replace "`r","`n"
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path,$t,$enc)
+}
+
+function HasProp($obj,[string]$name){ if ($null -eq $obj) { return $false }; return ($obj.PSObject.Properties.Match($name).Count -gt 0) }
+function GetProp($obj,[string]$name){ if (HasProp $obj $name) { return $obj.PSObject.Properties[$name].Value }; return $null }
+function CoerceArray($v){ return @(@($v)) }
+function FirstNonEmpty([object[]]$vals){ foreach($v in @($vals)){ if ($null -eq $v) { continue }; $s=[string]$v; if (-not [string]::IsNullOrWhiteSpace($s)) { return $s } }; return "" }
+
+if (-not (Test-Path -LiteralPath $RepoRoot -PathType Container)) { Die ("Missing RepoRoot: " + $RepoRoot) }
+$tbPath = Join-Path $RepoRoot "proofs\trust\trust_bundle.json"
+$asPath = Join-Path $RepoRoot "proofs\trust\allowed_signers"
+if (-not (Test-Path -LiteralPath $tbPath -PathType Leaf)) { Die ("Missing trust bundle: " + $tbPath) }
+
+$raw = Get-Content -Raw -LiteralPath $tbPath -Encoding UTF8
+if ([string]::IsNullOrWhiteSpace($raw)) { Die ("Empty trust bundle: " + $tbPath) }
+$tb = $raw | ConvertFrom-Json
+if ($null -eq $tb) { Die ("Failed to parse trust bundle JSON: " + $tbPath) }
+
+# locate keys array (supports multiple shapes)
+$keys = $null
+if (HasProp $tb "keys") { $keys = CoerceArray (GetProp $tb "keys") }
+if (($null -eq $keys -or (@(@($keys))).Count -lt 1) -and (HasProp $tb "trust")) { $t = GetProp $tb "trust"; if (HasProp $t "keys") { $keys = CoerceArray (GetProp $t "keys") } }
+if (($null -eq $keys -or (@(@($keys))).Count -lt 1) -and (HasProp $tb "principals")) { 
+  $keys = CoerceArray (GetProp $tb "principals") 
+}
+if (($null -eq $keys -or (@(@($keys))).Count -lt 1) -and (HasProp $tb "trust_bundle")) { $t = GetProp $tb "trust_bundle"; if (HasProp $t "keys") { $keys = CoerceArray (GetProp $t "keys") } }
+if ($null -eq $keys -or (@(@($keys))).Count -lt 1) { foreach($alt in @("signers","trusted_keys","allowed_keys")){ if (HasProp $tb $alt) { $keys = CoerceArray (GetProp $tb $alt); break } } }
+if ($null -eq $keys -or (@(@($keys))).Count -lt 1) { $top=@($tb.PSObject.Properties.Name) -join ","; Die ("Could not locate keys array in trust_bundle.json. Top-level props={" + $top + "}") }
+
+@
+@
+$keys = @(@($keys))
+
+$lines = New-Object System.Collections.Generic.List[string]
+foreach($k in $keys){
+  $principal = FirstNonEmpty @((GetProp $k "principal"),(GetProp $k "signer_identity"),(GetProp $k "identity"),(GetProp $k "id"))
+  $pubkey = FirstNonEmpty @((GetProp $k "public_key"),(GetProp $k "publicKey"),(GetProp $k "pubkey"),(GetProp $k "pub_key"))
+  $nsRaw = $null; foreach($n in @("namespaces","namespace","ns")){ if (HasProp $k $n) { $nsRaw = GetProp $k $n; break } }
+  if ([string]::IsNullOrWhiteSpace($principal)) { Die "trust_bundle key missing principal (principal/signer_identity/identity/id)" }
+  if ([string]::IsNullOrWhiteSpace($pubkey)) { Die ("trust_bundle key missing public_key for principal=[ " + $principal + " ]") }
+  $ns = @(@($nsRaw) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+  if ($ns.Count -gt 0) { $opt = "namespaces=`"" + (($ns | ForEach-Object { $_ -replace "`"","" } ) -join ",") + "`""; [void]$lines.Add(($principal + " " + $opt + " " + $pubkey).Trim()) } else { [void]$lines.Add(($principal + " " + $pubkey).Trim()) }
+}
+
+$sorted = $lines.ToArray() | Sort-Object
+Write-Utf8NoBomLf $asPath (($sorted -join "`n") + "`n")
+Write-Host ("OK: wrote allowed_signers => " + $asPath) -ForegroundColor Green

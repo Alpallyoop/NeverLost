@@ -1,0 +1,105 @@
+Set-StrictMode -Version Latest
+$ErrorActionPreference="Stop"
+
+# NOTE: this file is canonical v1; appended functions are safe additions.
+
+function NL-Sha256HexPath([string]$Path){
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw "sha256 path not found: $Path" }
+  return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
+}
+
+function NL-AssertPrincipal([string]$Principal){
+  if ([string]::IsNullOrWhiteSpace($Principal)) { throw "Principal is required." }
+  # minimal structural check; canonical formatter enforced elsewhere
+  if ($Principal -notmatch '^[a-z0-9][a-z0-9\-/]*[a-z0-9]$') { throw "Invalid principal: $Principal" }
+}
+
+function NL-AssertKeyId([string]$KeyId){
+  if ([string]::IsNullOrWhiteSpace($KeyId)) { throw "KeyId is required." }
+  if ($KeyId -notmatch '^[A-Za-z0-9][A-Za-z0-9\-_\.]{0,127}$') { throw "Invalid key_id: $KeyId" }
+}
+
+function NL-WriteReceipt([string]$ReceiptsPath, [hashtable]$Obj){
+  $dir = Split-Path -Parent $ReceiptsPath
+  if ($dir -and -not (Test-Path -LiteralPath $dir -PathType Container)) {
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  }
+  $json = ($Obj | ConvertTo-Json -Depth 20 -Compress)
+  $enc = [System.Text.UTF8Encoding]::new($false)
+  [System.IO.File]::AppendAllText($ReceiptsPath, ($json + "`n"), $enc)
+}
+
+function NL-InvokeProc([string]$Exe, [string]$Args, [int]$TimeoutMs){
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $Exe
+  $psi.Arguments = $Args
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError  = $true
+  $psi.RedirectStandardInput  = $true
+  $psi.UseShellExecute        = $false
+  $psi.CreateNoWindow         = $true
+
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+  [void]$p.Start()
+
+  # Canonical: close stdin immediately (prevents OpenSSH blocking on console input)
+  try { $p.StandardInput.Close() } catch { }
+
+  if (-not $p.WaitForExit($TimeoutMs)) {
+    try { $p.Kill() } catch { }
+    $o = ""; $e = ""
+    try { $o = $p.StandardOutput.ReadToEnd() } catch { }
+    try { $e = $p.StandardError.ReadToEnd() } catch { }
+    return [pscustomobject]@{ TimedOut=$true; ExitCode=-1; Stdout=$o; Stderr=$e }
+  }
+
+  $out = $p.StandardOutput.ReadToEnd()
+  $err = $p.StandardError.ReadToEnd()
+  return [pscustomobject]@{ TimedOut=$false; ExitCode=[int]$p.ExitCode; Stdout=[string]$out; Stderr=[string]$err }
+}
+
+function NL-ResolveSshKeygen(){
+  # deterministic candidate list
+  $candidates = New-Object System.Collections.Generic.List[string]
+
+  $cmd = Get-Command ssh-keygen -ErrorAction SilentlyContinue
+  if ($cmd -and $cmd.CommandType -eq 'Application' -and $cmd.Source) { [void]$candidates.Add($cmd.Source) }
+
+  $win = $env:WINDIR
+  if ($win) { [void]$candidates.Add((Join-Path $win "System32\OpenSSH\ssh-keygen.exe")) }
+
+  [void]$candidates.Add("C:\Program Files\OpenSSH-Win64\ssh-keygen.exe")
+  [void]$candidates.Add("C:\Program Files\Git\usr\bin\ssh-keygen.exe")
+
+  # de-dupe
+  $uniq = New-Object System.Collections.Generic.HashSet[string]([StringComparer]::OrdinalIgnoreCase)
+  $final = New-Object System.Collections.Generic.List[string]
+  foreach($p in $candidates){
+    if ([string]::IsNullOrWhiteSpace($p)) { continue }
+    $pp = $p.Trim()
+    if (-not (Test-Path -LiteralPath $pp -PathType Leaf)) { continue }
+    if ($uniq.Add($pp)) { [void]$final.Add($pp) }
+  }
+
+  if ($final.Count -eq 0) { throw "ssh-keygen.exe not found in any canonical location." }
+
+  # probe each candidate: it MUST support '-Y sign'
+  foreach($exe in $final){
+    $r = NL-InvokeProc $exe "-Y sign" 2000
+
+    # If this exe doesn't understand -Y, we often see the keypair prompt.
+    $prompt = ($r.Stdout + $r.Stderr)
+    $looksLikeKeygenPrompt = ($prompt -match 'Generating public/private ed25519 key pair' -or $prompt -match 'Enter file in which to save the key')
+
+    if ($looksLikeKeygenPrompt) { continue }
+
+    # If it *does* support -Y, it will typically print usage or an error mentioning -Y/sign, quickly.
+    # Accept if we didn't see keygen prompt and process returned (timed_out false).
+    if (-not $r.TimedOut) {
+      return $exe
+    }
+  }
+
+  throw "No ssh-keygen.exe with '-Y' support found. A non-Y ssh-keygen is being resolved somewhere (Git/older/OpenSSH)."
+}

@@ -1,0 +1,9 @@
+# NeverLost v1
+proofs/keys/*
+!proofs/keys/.gitkeep
+!proofs/keys/*.pub
+
+*.sig
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,4 @@
+neverlost.sigproof.v1
+principal=single-tenant/watchtower_authority/authority/watchtower
+namespace=watchtower
+utc=2026-02-05T05:30:30.2201437Z
