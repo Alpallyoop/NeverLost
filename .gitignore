@@ -7,3 +7,15 @@ proofs/keys/*
 *.log
 .DS_Store
 Thumbs.db
+
+# Tauri / Rust build outputs
+src-tauri/target/
+target/
+
+# Node / frontend
+node_modules/
+dist/
+
+# Logs / temp
+*.log
+*.tmp
