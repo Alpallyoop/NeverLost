@@ -1,31 +1,45 @@
-# NeverLost v1 — Canonical Identity Layer
+# NeverLost
 
-NeverLost is the canonical identity layer for the ecosystem:
-- **principals**
-- **trusted keys**
-- **detached signatures** (ssh-keygen -Y)
-- **deterministic trust bundles**
-- **append-only receipts**
+NeverLost is a deterministic identity and authority session instrument.
 
-## Contract (LOCKED v1)
-Principal: `<tenant>/<role>/<subject>`
+## What it does
 
-Role set:
-`owner | org_admin | device_admin | operator | auditor | device_agent | watchtower_authority`
+- start authority
+- confirm authority
+- end authority
+- status inspection
 
-Subject:
-- `device/<device_id>`
-- `user/<user_id>`
-- `authority/watchtower`
+## Proof lanes
+
+- selftest
+- vectors
+- full green
+- freeze
 
 ## Quick start
-1) Create an authority keypair (example):
-`ssh-keygen -t ed25519 -f proofs\keys\neverlost_authority_ed25519 -N '""' -C "neverlost_authority_ed25519"`
 
-2) Create/maintain `proofs\trust\trust_bundle.json` (see schemas).
+```powershell
+.\scripts\neverlost_cli_v1.ps1 -RepoRoot . -Area authority -Action status
+.\scripts\neverlost_cli_v1.ps1 -RepoRoot . -Area authority -Action start
+.\scripts\neverlost_cli_v1.ps1 -RepoRoot . -Area authority -Action confirm
+.\scripts\neverlost_cli_v1.ps1 -RepoRoot . -Area authority -Action end
+```
 
-3) Generate allowed_signers:
-`pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\make_allowed_signers_v1.ps1 -RepoRoot "C:\dev\neverlost"`
+## Proof
 
-4) Show identity:
-`pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\show_identity_v1.ps1 -RepoRoot "C:\dev\neverlost"`
+```powershell
+.\scripts\_selftest_neverlost_cli_v1.ps1 -RepoRoot .
+.\scripts\verify_neverlost_cli_vectors_v1.ps1 -RepoRoot .
+.\scripts\_RUN_neverlost_tier0_all_green_v1.ps1 -RepoRoot .
+.\scripts\_RUN_neverlost_tier0_freeze_v1.ps1 -RepoRoot .
+```
+
+## Status
+
+CLI authority lane is:
+
+- implemented
+- selftested
+- vectored
+- full-green
+- freeze-proved

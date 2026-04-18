@@ -1,0 +1,9 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_unknown_area",
+  "kind": "negative_single",
+  "area": "bogus",
+  "action": "status",
+  "expect_exit": 1,
+  "expect_contains": "UNKNOWN_AREA"
+}

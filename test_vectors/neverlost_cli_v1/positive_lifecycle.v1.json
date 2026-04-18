@@ -1,0 +1,25 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "positive_lifecycle",
+  "kind": "positive_lifecycle",
+  "steps": [
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 0,
+      "expect_stdout_contains": "AUTHORITY_STARTED_OK"
+    },
+    {
+      "area": "authority",
+      "action": "confirm",
+      "expect_exit": 0,
+      "expect_stdout_contains": "AUTHORITY_CONFIRMED_OK"
+    },
+    {
+      "area": "authority",
+      "action": "end",
+      "expect_exit": 0,
+      "expect_stdout_contains": "AUTHORITY_ENDED_OK"
+    }
+  ]
+}
