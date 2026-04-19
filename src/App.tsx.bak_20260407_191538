@@ -1,0 +1,128 @@
+import { useEffect, useState } from "react"
+import Overview from "./pages/Overview"
+import Profiles from "./pages/Profiles"
+import ActiveOperator from "./pages/ActiveOperator"
+import Authority from "./pages/Authority"
+import TrustBundle from "./pages/TrustBundle"
+import AllowedSigners from "./pages/AllowedSigners"
+import Receipts from "./pages/Receipts"
+import Debug from "./pages/Debug"
+import { adminLock, adminUnlock, getActiveProfile, getAdminUnlockState } from "./lib/api"
+import type { ActiveProfileInfo } from "./lib/types"
+
+type Page =
+  | "overview"
+  | "profiles"
+  | "activeOperator"
+  | "authority"
+  | "trust"
+  | "signers"
+  | "receipts"
+  | "debug"
+
+export default function App() {
+  const [page, setPage] = useState<Page>("overview")
+  const [profile, setProfile] = useState<ActiveProfileInfo | null>(null)
+  const [adminUnlocked, setAdminUnlocked] = useState(false)
+  const [pin, setPin] = useState("")
+
+  useEffect(() => {
+    Promise.all([getActiveProfile(), getAdminUnlockState()])
+      .then(([p, s]) => {
+        setProfile(p)
+        setAdminUnlocked(s.unlocked)
+      })
+  }, [])
+
+  const isAdmin = profile?.role === "admin"
+  const canAdmin = isAdmin && adminUnlocked
+
+  async function unlock() {
+    const r = await adminUnlock(pin)
+    setAdminUnlocked(r.unlocked)
+    if (r.unlocked) setPin("")
+  }
+
+  async function lock() {
+    await adminLock()
+    setAdminUnlocked(false)
+    if (page === "profiles" || page === "receipts") {
+      setPage("overview")
+    }
+  }
+
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "220px 1fr",
+      height: "100vh",
+      overflow: "hidden"
+    }}>
+      <aside style={{
+        borderRight: "1px solid #27272a",
+        padding: 12,
+        background: "#0a0a0a",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
+      }}>
+        <div style={{ fontWeight: 700 }}>NeverLost</div>
+
+        <div style={{
+          fontSize: 12,
+          border: "1px solid #27272a",
+          padding: 8,
+          borderRadius: 8
+        }}>
+          <div>{profile?.display_name}</div>
+          <div style={{ color: "#a1a1aa" }}>{profile?.role}</div>
+
+          {isAdmin && (
+            <div style={{ marginTop: 6 }}>
+              {!adminUnlocked ? (
+                <>
+                  <input
+                    type="password"
+                    placeholder="PIN"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    style={{ width: "100%", marginBottom: 4 }}
+                  />
+                  <button onClick={unlock}>Unlock</button>
+                </>
+              ) : (
+                <button onClick={lock}>Lock</button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <button onClick={() => setPage("overview")}>Overview</button>
+        <button onClick={() => setPage("authority")}>Authority</button>
+        <button onClick={() => setPage("activeOperator")}>Operator</button>
+
+        {canAdmin && <button onClick={() => setPage("profiles")}>Profiles</button>}
+        {canAdmin && <button onClick={() => setPage("receipts")}>Receipts</button>}
+
+        <button onClick={() => setPage("trust")}>Trust</button>
+        <button onClick={() => setPage("signers")}>Signers</button>
+        <button onClick={() => setPage("debug")}>Debug</button>
+      </aside>
+
+      <main style={{
+        overflow: "auto",
+        minWidth: 0,
+        padding: 16
+      }}>
+        {page === "overview" && <Overview />}
+        {page === "authority" && <Authority />}
+        {page === "activeOperator" && <ActiveOperator />}
+        {page === "profiles" && canAdmin && <Profiles />}
+        {page === "receipts" && canAdmin && <Receipts />}
+        {page === "trust" && <TrustBundle />}
+        {page === "signers" && <AllowedSigners />}
+        {page === "debug" && <Debug />}
+      </main>
+    </div>
+  )
+}

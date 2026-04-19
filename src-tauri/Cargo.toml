@@ -1,0 +1,23 @@
+[package]
+name = "neverlost_workbench"
+version = "1.0.0"
+description = "NeverLost Trust Operator Workbench"
+authors = ["OpenAI"]
+edition = "2021"
+
+[lib]
+name = "neverlost_workbench_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+chrono = { version = "0.4", features = ["clock"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tauri = { version = "2.0.0", features = ["tray-icon"] }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))'.dependencies]
+tauri-plugin-autostart = "2.5.1"

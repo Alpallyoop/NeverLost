@@ -1,0 +1,38 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, sans-serif;
+  background: #09090b;
+  color: #fafafa;
+  min-width: 0;
+}
+
+button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #3f3f46;
+  background: #111113;
+  color: #fafafa;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input, select {
+  width: 100%;
+}
+
+pre {
+  margin: 0;
+}
+
+main, section, div {
+  min-width: 0;
+}

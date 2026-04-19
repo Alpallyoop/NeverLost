@@ -1,0 +1,37 @@
+import { useEffect, useState } from "react"
+import { confirmAuthority, endAuthority, getAuthorityStatus, startAuthority } from "../lib/api"
+import type { AuthorityStatus } from "../lib/types"
+
+export default function Authority() {
+  const [s, setS] = useState<AuthorityStatus | null>(null)
+
+  async function refresh() {
+    setS(await getAuthorityStatus())
+  }
+
+  useEffect(() => { refresh() }, [])
+
+  if (!s) return null
+
+  return (
+    <div style={{ display: "grid", gap: 12, maxWidth: 600 }}>
+      <h2>Authority</h2>
+
+      <div style={{ fontSize: 14 }}>
+        <div>Status: {s.active ? "ACTIVE" : "INACTIVE"}</div>
+        <div>Principal: {s.principal}</div>
+        <div style={{ wordBreak: "break-all" }}>
+          Session: {s.session_id}
+        </div>
+        <div>Remaining: {s.remaining_human}</div>
+        <div>Used: {s.used_human}</div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={async () => { await startAuthority(); refresh() }}>Start</button>
+        <button onClick={async () => { await confirmAuthority(); refresh() }}>Confirm</button>
+        <button onClick={async () => { await endAuthority(); refresh() }}>End</button>
+      </div>
+    </div>
+  )
+}

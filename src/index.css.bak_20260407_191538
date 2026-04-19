@@ -1,0 +1,31 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: system-ui;
+}
+
+button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+  background: #111113;
+  color: white;
+}
+
+input, select {
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+  background: #0f0f11;
+  color: white;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+}

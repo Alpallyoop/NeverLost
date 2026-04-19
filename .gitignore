@@ -1,0 +1,13 @@
+﻿# build artifacts
+target/
+src-tauri/target/
+node_modules/
+dist/
+out/
+
+# binaries
+*.exe
+*.dll
+*.pdb
+*.rlib
+*.rmeta

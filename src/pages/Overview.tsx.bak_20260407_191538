@@ -1,0 +1,143 @@
+import { useEffect, useState } from "react"
+import {
+  getActiveAllocation,
+  getActiveProfile,
+  getAllowedSignersInfo,
+  getAuthorityPreferences,
+  getAuthorityStatus,
+  getTrustBundleInfo,
+} from "../lib/api"
+import type {
+  ActiveProfileInfo,
+  AllowedSignersInfo,
+  AuthorityPreferences,
+  AuthorityStatus,
+  SessionAllocation,
+  TrustBundleInfo,
+} from "../lib/types"
+
+function StatusCard(props: {
+  title: string
+  status: string
+  detail: string
+}) {
+  return (
+    <section
+      style={{
+        border: "1px solid #27272a",
+        borderRadius: 16,
+        padding: 16,
+        background: "#0f0f11",
+      }}
+    >
+      <div style={{ fontSize: 14, color: "#a1a1aa", marginBottom: 8 }}>{props.title}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>{props.status}</div>
+      <div style={{ color: "#d4d4d8", wordBreak: "break-word" }}>{props.detail}</div>
+    </section>
+  )
+}
+
+function SessionChip(props: { active: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "4px 10px",
+        borderRadius: 999,
+        border: "1px solid #3f3f46",
+        background: props.active ? "#0f1a12" : "#18181b",
+        color: props.active ? "#86efac" : "#a1a1aa",
+        fontSize: 12,
+        fontWeight: 700,
+      }}
+    >
+      {props.active ? "SESSION ACTIVE" : "NO ACTIVE SESSION"}
+    </span>
+  )
+}
+
+export default function Overview() {
+  const [authority, setAuthority] = useState<AuthorityStatus | null>(null)
+  const [allocation, setAllocation] = useState<SessionAllocation | null>(null)
+  const [trust, setTrust] = useState<TrustBundleInfo | null>(null)
+  const [signers, setSigners] = useState<AllowedSignersInfo | null>(null)
+  const [prefs, setPrefs] = useState<AuthorityPreferences | null>(null)
+  const [profile, setProfile] = useState<ActiveProfileInfo | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const [a, alloc, t, s, p, prof] = await Promise.all([
+        getAuthorityStatus(),
+        getActiveAllocation(),
+        getTrustBundleInfo(),
+        getAllowedSignersInfo(),
+        getAuthorityPreferences(),
+        getActiveProfile(),
+      ])
+
+      setAuthority(a)
+      setAllocation(alloc)
+      setTrust(t)
+      setSigners(s)
+      setPrefs(p)
+      setProfile(prof)
+    }
+
+    load()
+  }, [])
+
+  const effectivePrincipal = authority?.principal || profile?.principal || ""
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h1 style={{ fontSize: 32, marginTop: 0 }}>NeverLost Workbench</h1>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <StatusCard
+          title="Active Profile"
+          status={profile?.display_name ?? "Loading"}
+          detail={profile?.profile_id ?? ""}
+        />
+        <StatusCard
+          title="Authority Status"
+          status={authority?.active ? "ACTIVE" : "INACTIVE"}
+          detail={effectivePrincipal}
+        />
+        <StatusCard
+          title="Remaining Allocation"
+          status={authority?.remaining_human ?? ""}
+          detail={allocation?.status ?? ""}
+        />
+        <StatusCard
+          title="Allowed Signers"
+          status={signers ? "READY" : "Loading"}
+          detail={signers?.sha256 ?? ""}
+        />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <section style={{ border: "1px solid #27272a", borderRadius: 16, padding: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Current Identity</h2>
+          <div style={{ marginBottom: 12 }}>
+            <SessionChip active={!!authority?.active} />
+          </div>
+          <div>Profile: {profile?.display_name ?? ""}</div>
+          <div>Profile ID: {profile?.profile_id ?? ""}</div>
+          <div>Principal: {effectivePrincipal}</div>
+          <div>Status: {authority?.active ? "ACTIVE" : "INACTIVE"}</div>
+          <div>Session ID: {authority?.session_id ?? ""}</div>
+        </section>
+
+        <section style={{ border: "1px solid #27272a", borderRadius: 16, padding: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Allocation</h2>
+          <div>Granted: {authority?.granted_human ?? ""}</div>
+          <div>Used: {authority?.used_human ?? ""}</div>
+          <div>Remaining: {authority?.remaining_human ?? ""}</div>
+          <div>Allocation Status: {authority?.allocation_status ?? ""}</div>
+          <div>Auto-start on launch: {prefs?.auto_start_authority_on_launch ? "Enabled" : "Disabled"}</div>
+          {authority?.ended_utc ? <div>Session was active for {authority?.duration_human}</div> : null}
+        </section>
+      </div>
+    </div>
+  )
+}

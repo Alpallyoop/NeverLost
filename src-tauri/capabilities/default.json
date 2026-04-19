@@ -1,0 +1,12 @@
+{
+    "$schema":  "../gen/schemas/desktop-schema.json",
+    "identifier":  "default",
+    "description":  "Default capability for NeverLost Workbench",
+    "windows":  [
+                    "main"
+                ],
+    "permissions":  [
+                        "core:default",
+                        "autostart:default"
+                    ]
+}

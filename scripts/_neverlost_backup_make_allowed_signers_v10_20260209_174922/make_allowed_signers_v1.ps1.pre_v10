@@ -1,0 +1,47 @@
+param([Parameter(Mandatory=$true)][string]$RepoRoot)
+$ErrorActionPreference="Stop"
+Set-StrictMode -Version Latest
+
+function Die([string]$m){ throw $m }
+function Write-Utf8NoBomLf([string]$Path,[string]$Text){
+  $dir = Split-Path -Parent $Path
+  if ($dir -and -not (Test-Path -LiteralPath $dir -PathType Container)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+  $t = $Text -replace "`r`n","`n" -replace "`r","`n"
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path,$t,$enc)
+}
+
+if (-not (Test-Path -LiteralPath $RepoRoot -PathType Container)) { Die ("Missing RepoRoot: " + $RepoRoot) }
+$tbPath = Join-Path $RepoRoot "proofs\trust\trust_bundle.json"
+$asPath = Join-Path $RepoRoot "proofs\trust\allowed_signers"
+if (-not (Test-Path -LiteralPath $tbPath -PathType Leaf)) { Die ("Missing trust bundle: " + $tbPath) }
+
+$raw = Get-Content -Raw -LiteralPath $tbPath -Encoding UTF8
+if ([string]::IsNullOrWhiteSpace($raw)) { Die ("Empty trust bundle: " + $tbPath) }
+$tb = $raw | ConvertFrom-Json
+if (-not $tb) { Die ("Failed to parse trust bundle JSON: " + $tbPath) }
+
+# Expect: tb.keys[] with principal, public_key, namespaces (optional)
+$keys = @(@($tb.keys))
+if (-not $keys -or $keys.Count -lt 1) { Die "trust_bundle.json missing keys[]" }
+
+$lines = New-Object System.Collections.Generic.List[string]
+foreach($k in $keys){
+  $principal = [string]$k.principal
+  $pubkey    = [string]$k.public_key
+  $nsRaw     = $k.namespaces
+  if ([string]::IsNullOrWhiteSpace($principal)) { Die "trust_bundle key missing principal" }
+  if ([string]::IsNullOrWhiteSpace($pubkey))    { Die ("trust_bundle key for principal '" + $principal + "' missing public_key") }
+  $ns = @(@($nsRaw) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+  if ($ns.Count -gt 0) {
+    $opt = 'namespaces="' + (($ns | ForEach-Object { $_ -replace '"',''} ) -join ',') + '"'
+    [void]$lines.Add(($principal + " " + $opt + " " + $pubkey).Trim())
+  } else {
+    [void]$lines.Add(($principal + " " + $pubkey).Trim())
+  }
+}
+
+$sorted = $lines.ToArray() | Sort-Object
+Write-Utf8NoBomLf $asPath (($sorted -join "`n") + "`n")
+Write-Host ("OK: wrote allowed_signers => " + $asPath) -ForegroundColor Green
+

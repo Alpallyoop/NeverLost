@@ -1,0 +1,266 @@
+import { useEffect, useMemo, useState } from "react"
+import { copyText, getReceiptLedger } from "../lib/api"
+import type { LedgerEntry } from "../lib/types"
+
+type ParsedRow = {
+  raw: string
+  eventType: string
+  ok: string
+  runId: string
+  utc: string
+  action: string
+  principal: string
+  sessionId: string
+}
+
+type AuthorityGroup = {
+  sessionId: string
+  principal: string
+  startedUtc: string
+  endedUtc: string
+  rows: ParsedRow[]
+}
+
+function tryParse(raw: string): ParsedRow {
+  try {
+    const obj = JSON.parse(raw)
+    return {
+      raw,
+      eventType: String(obj.event_type ?? ""),
+      ok: String(obj.ok ?? ""),
+      runId: String(obj.run_id ?? ""),
+      utc: String(obj.utc ?? obj.finished_utc ?? obj.time_utc ?? ""),
+      action: String(obj.action ?? ""),
+      principal: String(obj.principal ?? ""),
+      sessionId: String(obj.session_id ?? ""),
+    }
+  } catch {
+    return {
+      raw,
+      eventType: "",
+      ok: "",
+      runId: "",
+      utc: "",
+      action: "",
+      principal: "",
+      sessionId: "",
+    }
+  }
+}
+
+function friendlyEventName(row: ParsedRow): string {
+  if (row.action === "authority.started") return "Authority Started"
+  if (row.action === "authority.confirmed") return "Authority Confirmed"
+  if (row.action === "authority.ended") return "Authority Ended"
+  if (row.action === "authority.auto_started_on_launch") return "Authority Auto-started On Launch"
+  if (row.action === "authority.resumed_existing_session") return "Authority Resumed Existing Session"
+  if (row.action === "authority.interrupted") return "Authority Interrupted"
+  if (row.action === "authority.start_blocked_already_active") return "Authority Start Blocked (Already Active)"
+  if (row.action === "authority.start_blocked_allocation_exhausted") return "Authority Start Blocked (Allocation Exhausted)"
+  if (row.action === "authority.confirm_blocked_expired") return "Authority Confirm Blocked (Allocation Expired)"
+  if (row.eventType === "neverlost/tier0-full-green") return "Verification Run"
+  if (row.eventType === "neverlost/trust-pipeline-full-green") return "Trust Pipeline Run"
+  if (row.runId) return "Verification Run"
+  if (row.utc && row.ok === "true") return "Receipt Entry"
+  if (row.utc && row.ok === "false") return "Failed Receipt Entry"
+  return "Unclassified Receipt"
+}
+
+function isAuthorityRow(row: ParsedRow): boolean {
+  return (
+    row.action === "authority.started" ||
+    row.action === "authority.confirmed" ||
+    row.action === "authority.ended" ||
+    row.action === "authority.auto_started_on_launch" ||
+    row.action === "authority.resumed_existing_session" ||
+    row.action === "authority.interrupted" ||
+    row.action === "authority.start_blocked_already_active" ||
+    row.action === "authority.start_blocked_allocation_exhausted" ||
+    row.action === "authority.confirm_blocked_expired"
+  )
+}
+
+function groupAuthorityRows(rows: ParsedRow[]): AuthorityGroup[] {
+  const map = new Map<string, AuthorityGroup>()
+
+  for (const row of rows) {
+    const key = row.sessionId || "runtime-no-session"
+    const existing = map.get(key)
+
+    if (!existing) {
+      map.set(key, {
+        sessionId: key,
+        principal: row.principal,
+        startedUtc:
+          row.action === "authority.started" || row.action === "authority.auto_started_on_launch"
+            ? row.utc
+            : "",
+        endedUtc: row.action === "authority.ended" ? row.utc : "",
+        rows: [row],
+      })
+    } else {
+      existing.rows.push(row)
+      if (!existing.principal && row.principal) existing.principal = row.principal
+      if ((row.action === "authority.started" || row.action === "authority.auto_started_on_launch") && !existing.startedUtc) {
+        existing.startedUtc = row.utc
+      }
+      if (row.action === "authority.ended") existing.endedUtc = row.utc
+    }
+  }
+
+  const groups = Array.from(map.values())
+
+  for (const g of groups) {
+    g.rows.sort((a, b) => String(b.utc).localeCompare(String(a.utc)))
+  }
+
+  groups.sort((a, b) => {
+    const aTime = a.startedUtc || a.rows[0]?.utc || ""
+    const bTime = b.startedUtc || b.rows[0]?.utc || ""
+    return String(bTime).localeCompare(String(aTime))
+  })
+
+  return groups
+}
+
+function LegacySection(props: { rows: ParsedRow[] }) {
+  return (
+    <details style={{ border: "1px solid #27272a", borderRadius: 16, padding: 16 }}>
+      <summary style={{ cursor: "pointer", fontWeight: 700 }}>Legacy / Debug Receipts</summary>
+
+      <div style={{ marginTop: 16, border: "1px solid #27272a", borderRadius: 16, overflow: "hidden" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 80px 1.5fr 1.5fr",
+            gap: 12,
+            padding: 16,
+            background: "#111113",
+            fontWeight: 700,
+          }}
+        >
+          <div>Event</div>
+          <div>OK</div>
+          <div>Session / Run</div>
+          <div>UTC</div>
+        </div>
+
+        {props.rows.length === 0 && (
+          <div style={{ padding: 16, color: "#a1a1aa" }}>No legacy/debug receipts in this section.</div>
+        )}
+
+        {props.rows.map((row, i) => (
+          <div key={i} style={{ borderTop: "1px solid #27272a", padding: 16 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 80px 1.5fr 1.5fr",
+                gap: 12,
+                alignItems: "start",
+              }}
+            >
+              <div>{friendlyEventName(row)}</div>
+              <div>{row.ok}</div>
+              <div style={{ wordBreak: "break-all" }}>{row.sessionId || row.runId}</div>
+              <div style={{ wordBreak: "break-all" }}>{row.utc}</div>
+            </div>
+
+            {(row.principal || row.action) && (
+              <div style={{ marginTop: 10, color: "#d4d4d8" }}>
+                {row.principal ? <div>Principal: {row.principal}</div> : null}
+                {row.action ? <div>Action: {row.action}</div> : null}
+              </div>
+            )}
+
+            <details style={{ marginTop: 12 }}>
+              <summary>Raw Receipt</summary>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button onClick={() => copyText(row.raw)}>Copy Raw Receipt</button>
+              </div>
+              <pre style={{ whiteSpace: "pre-wrap", color: "#d4d4d8", marginTop: 12 }}>
+                {row.raw}
+              </pre>
+            </details>
+          </div>
+        ))}
+      </div>
+    </details>
+  )
+}
+
+export default function Receipts() {
+  const [rows, setRows] = useState<LedgerEntry[]>([])
+
+  useEffect(() => {
+    getReceiptLedger().then(setRows)
+  }, [])
+
+  const parsed = useMemo(() => rows.map((x) => tryParse(x.raw)), [rows])
+  const authorityRows = useMemo(() => parsed.filter((row) => isAuthorityRow(row)), [parsed])
+  const legacyRows = useMemo(() => parsed.filter((row) => !isAuthorityRow(row)), [parsed])
+  const authorityGroups = useMemo(() => groupAuthorityRows(authorityRows), [authorityRows])
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h1 style={{ fontSize: 32, marginTop: 0 }}>Receipts</h1>
+
+      <section style={{ marginBottom: 24 }}>
+        <h2 style={{ marginTop: 0 }}>Authority Receipts</h2>
+
+        {authorityGroups.length === 0 ? (
+          <div style={{ color: "#a1a1aa" }}>No authority receipts found.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 16 }}>
+            {authorityGroups.map((group, index) => (
+              <details
+                key={group.sessionId}
+                open={index === 0}
+                style={{ border: "1px solid #27272a", borderRadius: 16, padding: 16 }}
+              >
+                <summary style={{ cursor: "pointer", fontWeight: 700 }}>
+                  Session {group.sessionId}
+                </summary>
+
+                <div style={{ marginTop: 12, marginBottom: 12 }}>
+                  <div>Principal: {group.principal}</div>
+                  <div>Started: {group.startedUtc}</div>
+                  <div>Ended: {group.endedUtc}</div>
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  {group.rows.map((row, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        border: "1px solid #3f3f46",
+                        borderRadius: 12,
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ fontWeight: 700 }}>{friendlyEventName(row)}</div>
+                      <div>OK: {row.ok}</div>
+                      <div>UTC: {row.utc}</div>
+                      <div>Action: {row.action}</div>
+
+                      <details style={{ marginTop: 12 }}>
+                        <summary>Raw Receipt</summary>
+                        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                          <button onClick={() => copyText(row.raw)}>Copy Raw Receipt</button>
+                        </div>
+                        <pre style={{ whiteSpace: "pre-wrap", color: "#d4d4d8", marginTop: 12 }}>
+                          {row.raw}
+                        </pre>
+                      </details>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <LegacySection rows={legacyRows} />
+    </div>
+  )
+}

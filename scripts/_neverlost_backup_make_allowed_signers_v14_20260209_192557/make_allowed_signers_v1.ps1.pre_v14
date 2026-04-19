@@ -1,0 +1,73 @@
+param([Parameter(Mandatory=$true)][string]$RepoRoot)
+$ErrorActionPreference="Stop"
+Set-StrictMode -Version Latest
+
+function Die([string]$m){ throw $m }
+function Write-Utf8NoBomLf([string]$Path,[string]$Text){
+  $dir = Split-Path -Parent $Path
+  if ($dir -and -not (Test-Path -LiteralPath $dir -PathType Container)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+  $t = $Text -replace "`r`n","`n" -replace "`r","`n"
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path,$t,$enc)
+}
+function Has-Prop($obj,[string]$name){ if($null -eq $obj){ return $false }; return ($obj.PSObject.Properties.Match($name).Count -gt 0) }
+function Get-Prop($obj,[string]$name){ if(Has-Prop $obj $name){ return $obj.PSObject.Properties[$name].Value }; return $null }
+function Coerce-Array($v){ return @(@($v)) }
+function First-NonEmptyString([object[]]$vals){ foreach($v in @($vals)){ if($null -eq $v){ continue }; $s=[string]$v; if(-not [string]::IsNullOrWhiteSpace($s)){ return $s } }; return "" }
+
+if (-not (Test-Path -LiteralPath $RepoRoot -PathType Container)) { Die ("Missing RepoRoot: " + $RepoRoot) }
+$tbPath = Join-Path $RepoRoot "proofs\trust\trust_bundle.json"
+$asPath = Join-Path $RepoRoot "proofs\trust\allowed_signers"
+if (-not (Test-Path -LiteralPath $tbPath -PathType Leaf)) { Die ("Missing trust bundle: " + $tbPath) }
+
+$raw = Get-Content -Raw -LiteralPath $tbPath -Encoding UTF8
+if ([string]::IsNullOrWhiteSpace($raw)) { Die ("Empty trust bundle: " + $tbPath) }
+$tb = $raw | ConvertFrom-Json
+if ($null -eq $tb) { Die ("Failed to parse trust bundle JSON: " + $tbPath) }
+
+# ---- locate keys array without touching missing properties (StrictMode-safe) ----
+$keys = $null
+if (Has-Prop $tb "keys") { $keys = Coerce-Array (Get-Prop $tb "keys") }
+if (($null -eq $keys -or $keys.Count -lt 1) -and (Has-Prop $tb "trust")) {
+  $t = Get-Prop $tb "trust"
+  if (Has-Prop $t "keys") { $keys = Coerce-Array (Get-Prop $t "keys") }
+}
+if (($null -eq $keys -or $keys.Count -lt 1) -and (Has-Prop $tb "trust_bundle")) {
+  $t = Get-Prop $tb "trust_bundle"
+  if (Has-Prop $t "keys") { $keys = Coerce-Array (Get-Prop $t "keys") }
+}
+if ($null -eq $keys -or $keys.Count -lt 1) {
+  foreach($alt in @("signers","trusted_keys","allowed_keys")){
+    if (Has-Prop $tb $alt) { $keys = Coerce-Array (Get-Prop $tb $alt); break }
+  }
+}
+if ($null -eq $keys -or $keys.Count -lt 1) {
+  $top = @($tb.PSObject.Properties.Name) -join ","
+  $trustProps = ""
+  if (Has-Prop $tb "trust") { $trustProps = "; trust={" + (@((Get-Prop $tb "trust").PSObject.Properties.Name) -join ",") + "}" }
+  $tbProps = ""
+  if (Has-Prop $tb "trust_bundle") { $tbProps = "; trust_bundle={" + (@((Get-Prop $tb "trust_bundle").PSObject.Properties.Name) -join ",") + "}" }
+  Die ("Could not locate keys array in trust_bundle.json. Top-level props={" + $top + "}" + $trustProps + $tbProps) )
+}
+
+$lines = New-Object System.Collections.Generic.List[string]
+foreach($k in $keys){
+  $principal = First-NonEmptyString @((Get-Prop $k "principal"),(Get-Prop $k "signer_identity"),(Get-Prop $k "identity"),(Get-Prop $k "id"))
+  $pubkey    = First-NonEmptyString @((Get-Prop $k "public_key"),(Get-Prop $k "publicKey"),(Get-Prop $k "pubkey"),(Get-Prop $k "pub_key"))
+  $nsRaw     = $null
+  foreach($n in @("namespaces","namespace","ns")){ if (Has-Prop $k $n) { $nsRaw = Get-Prop $k $n; break } }
+  if ([string]::IsNullOrWhiteSpace($principal)) { Die "trust_bundle key missing principal (principal/signer_identity/identity/id)" }
+  if ([string]::IsNullOrWhiteSpace($pubkey))    { Die ("trust_bundle key for principal '" + $principal + "' missing public_key (public_key/publicKey/pubkey/pub_key)") }
+  $ns = @(@($nsRaw) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+  if ($ns.Count -gt 0) {
+    $opt = 'namespaces="' + (($ns | ForEach-Object { $_ -replace '"',''} ) -join ',') + '"'
+    [void]$lines.Add(($principal + " " + $opt + " " + $pubkey).Trim())
+  } else {
+    [void]$lines.Add(($principal + " " + $pubkey).Trim())
+  }
+}
+
+$sorted = $lines.ToArray() | Sort-Object
+Write-Utf8NoBomLf $asPath (($sorted -join "`n") + "`n")
+Write-Host ("OK: wrote allowed_signers => " + $asPath) -ForegroundColor Green
+

@@ -1,0 +1,9 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_unknown_action",
+  "kind": "negative_single",
+  "area": "authority",
+  "action": "bogus",
+  "expect_exit": 1,
+  "expect_contains": "UNKNOWN_ACTION"
+}
