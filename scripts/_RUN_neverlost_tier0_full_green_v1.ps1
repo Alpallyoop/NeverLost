@@ -52,7 +52,7 @@ function Escape-Json([string]$s){
 }
 
 function To-CanonJson-Flat([hashtable]$h){
-  $keys = @($h.Keys | Sort-Object)
+  $keys = [string[]]@($h.Keys | ForEach-Object { [string]$_ }); [System.Array]::Sort($keys, [System.StringComparer]::Ordinal)
   $parts = New-Object System.Collections.Generic.List[string]
   foreach($k in $keys){
     $v = $h[$k]
@@ -90,7 +90,8 @@ EnsureDir $ReceiptsDir
 $runId = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
 $startedUtc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
 if(-not (Test-Path -LiteralPath $PSExe -PathType Leaf)){
   Die ("MISSING_POWERSHELL_EXE: " + $PSExe)
 }
@@ -103,19 +104,7 @@ $evidenceStderr = Join-Path $tmpRoot ("neverlost_tier0_evidence_stderr_" + $runI
 $vectorStdout   = Join-Path $tmpRoot ("neverlost_tier0_vectors_stdout_" + $runId + ".txt")
 $vectorStderr   = Join-Path $tmpRoot ("neverlost_tier0_vectors_stderr_" + $runId + ".txt")
 
-$pEvidence = Start-Process `
-  -FilePath $PSExe `
-  -ArgumentList @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$EvidenceRunnerPath,
-    "-RepoRoot",$RepoRoot
-  ) `
-  -Wait `
-  -PassThru `
-  -RedirectStandardOutput $evidenceStdout `
-  -RedirectStandardError $evidenceStderr
+$pEvidence = NL-InvokePsFile -File $EvidenceRunnerPath -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $evidenceStdout -StderrPath $evidenceStderr
 
 if($pEvidence.ExitCode -ne 0){
   Write-Host ("EVIDENCE_STDOUT=" + $evidenceStdout) -ForegroundColor Yellow
@@ -128,19 +117,7 @@ if($evidenceText.IndexOf("NEVERLOST_TRUST_EVIDENCE_OK",[System.StringComparison]
   throw "NEVERLOST_TIER0_MISSING_EVIDENCE_TOKEN"
 }
 
-$pVector = Start-Process `
-  -FilePath $PSExe `
-  -ArgumentList @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$VectorRunnerPath,
-    "-RepoRoot",$RepoRoot
-  ) `
-  -Wait `
-  -PassThru `
-  -RedirectStandardOutput $vectorStdout `
-  -RedirectStandardError $vectorStderr
+$pVector = NL-InvokePsFile -File $VectorRunnerPath -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $vectorStdout -StderrPath $vectorStderr
 
 if($pVector.ExitCode -ne 0){
   Write-Host ("VECTOR_STDOUT=" + $vectorStdout) -ForegroundColor Yellow
@@ -181,7 +158,9 @@ $receipt = [ordered]@{
   vector_stderr_sha256 = (Get-FileSha256 $vectorStderr)
   vector_stdout_sha256 = (Get-FileSha256 $vectorStdout)
 }
-Add-Content -LiteralPath $LedgerPath -Value (To-CanonJson-Flat $receipt)
+$lineBytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes((To-CanonJson-Flat $receipt) + "`n")
+$fs = [System.IO.File]::Open($LedgerPath, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+try { $fs.Write($lineBytes,0,$lineBytes.Length) } finally { $fs.Dispose() }
 
 Write-Host "NEVERLOST_TIER0_FULL_GREEN" -ForegroundColor Green
 Write-Host ("LEDGER=" + $LedgerPath) -ForegroundColor Green

@@ -10,10 +10,14 @@ function Die {
   throw $Message
 }
 
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$NLStartExtra = @{}
+if(NL-IsWindowsHost){ $NLStartExtra["WindowStyle"] = "Hidden" }
+
 function Invoke-AllGreen {
   param([Parameter(Mandatory=$true)][string]$RepoRoot)
 
-  $PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+  $PSExe = NL-ResolvePsHost
   $Script = Join-Path $RepoRoot "scripts\_RUN_neverlost_tier0_all_green_v1.ps1"
 
   $tmp = Join-Path $RepoRoot "proofs\receipts\freeze_tmp"
@@ -25,35 +29,10 @@ function Invoke-AllGreen {
   $stdoutPath = Join-Path $tmp ($id + ".stdout.txt")
   $stderrPath = Join-Path $tmp ($id + ".stderr.txt")
 
-  $argLine = @(
-    '-NoProfile'
-    '-NonInteractive'
-    '-ExecutionPolicy'
-    'Bypass'
-    '-File'
-    ('"' + $Script + '"')
-    '-RepoRoot'
-    ('"' + $RepoRoot + '"')
-  ) -join ' '
-
-  $proc = Start-Process `
-    -FilePath $PSExe `
-    -ArgumentList $argLine `
-    -Wait `
-    -PassThru `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput $stdoutPath `
-    -RedirectStandardError $stderrPath
-
-  $stdout = ""
-  if(Test-Path -LiteralPath $stdoutPath -PathType Leaf){
-    $stdout = Get-Content -Raw -LiteralPath $stdoutPath -Encoding UTF8
-  }
-
-  $stderr = ""
-  if(Test-Path -LiteralPath $stderrPath -PathType Leaf){
-    $stderr = Get-Content -Raw -LiteralPath $stderrPath -Encoding UTF8
-  }
+  $run = NL-InvokePsFile -File $Script -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $stdoutPath -StderrPath $stderrPath
+  $stdout = $run.Stdout
+  $stderr = $run.Stderr
+  $proc = [pscustomobject]@{ ExitCode = $run.ExitCode }
 
   if($proc.ExitCode -ne 0){
     Die "FREEZE_RUNNER_FAILED"

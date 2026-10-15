@@ -32,7 +32,7 @@ function EscapeJson([string]$s){
 }
 
 function To-CanonJson-Flat([hashtable]$h){
-  $keys = @($h.Keys | Sort-Object)
+  $keys = [string[]]@($h.Keys | ForEach-Object { [string]$_ }); [System.Array]::Sort($keys, [System.StringComparer]::Ordinal)
   $parts = New-Object System.Collections.Generic.List[string]
   foreach($k in $keys){
     $v = $h[$k]
@@ -61,6 +61,14 @@ function AppendLineUtf8NoBomLf([string]$Path,[string]$Line){
   }
 }
 
+function WriteAtomicUtf8NoBom([string]$Path,[string]$Text){
+  $tmp = $Path + ".tmp"
+  [System.IO.File]::WriteAllText($tmp, $Text, (New-Object System.Text.UTF8Encoding($false)))
+  if(Test-Path -LiteralPath $Path -PathType Leaf){ [System.IO.File]::Replace($tmp, $Path, [NullString]::Value) } else { [System.IO.File]::Move($tmp, $Path) }
+  $back = [System.IO.File]::ReadAllText($Path, (New-Object System.Text.UTF8Encoding($false)))
+  if($back -cne $Text){ Die ("SESSION_WRITE_VERIFY_FAILED: " + $Path) }
+}
+
 function Sha256HexFile([string]$Path){
   return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
 }
@@ -74,6 +82,9 @@ $SessionPath = Join-Path $ReceiptDir "active_authority_session.json"
 if(-not (Test-Path -LiteralPath $SessionPath -PathType Leaf)){ Die "NO_ACTIVE_SESSION" }
 
 $sessionObj = ConvertFrom-Json (ReadUtf8 $SessionPath)
+# PowerShell 7 parses ISO timestamps into DateTime; keep the canonical UTC string form.
+$startedProp = $sessionObj.PSObject.Properties["started_utc"]
+if($null -ne $startedProp -and $startedProp.Value -is [datetime]){ $startedProp.Value = $startedProp.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") }
 if(-not $sessionObj.active){ Die "SESSION_NOT_ACTIVE" }
 
 $trustSha = Sha256HexFile (Join-Path $TrustDir "trust_bundle.json")
@@ -103,7 +114,7 @@ $inactive = [ordered]@{
   session_id = [string]$sessionObj.session_id
   started_utc = [string]$sessionObj.started_utc
 }
-[System.IO.File]::WriteAllText($SessionPath, (To-CanonJson-Flat $inactive) + "`n", (New-Object System.Text.UTF8Encoding($false)))
+WriteAtomicUtf8NoBom $SessionPath ((To-CanonJson-Flat $inactive) + "`n")
 
 Write-Host "AUTHORITY_ENDED_OK" -ForegroundColor Green
 Write-Host ("SESSION_ID=" + [string]$sessionObj.session_id) -ForegroundColor Green

@@ -38,11 +38,14 @@ if($Area -eq "authority" -and $Action -eq "start" -and (Test-Path -LiteralPath $
 
 function Die([string]$m){ throw $m }
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
-
 if(-not (Test-Path -LiteralPath $RepoRoot -PathType Container)){ Die "REPOROOT_MISSING" }
 
 if($Area -ne "authority"){ Die ("UNKNOWN_AREA: " + $Area) }
+if(@("start","confirm","end","status") -notcontains $Action){ Die ("UNKNOWN_ACTION: " + $Action) }
+
+. (Join-Path (Join-Path $RepoRoot "scripts") "_lib_neverlost_host_v1.ps1")
+$PSExe = $null
+if($Action -ne "status"){ $PSExe = NL-ResolvePsHost }
 
 switch($Action){
   "start" {
@@ -80,6 +83,11 @@ switch($Action){
     }
 
     $obj = $raw | ConvertFrom-Json
+    # PowerShell 7 turns ISO timestamps into DateTime; print them back in the canonical UTC form.
+    foreach($tp in @("started_utc","ended_utc")){
+      $pp = $obj.PSObject.Properties[$tp]
+      if($null -ne $pp -and $pp.Value -is [datetime]){ $pp.Value = $pp.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") }
+    }
 
     $active = $false
     if($obj.PSObject.Properties.Name -contains "active"){

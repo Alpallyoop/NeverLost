@@ -9,16 +9,9 @@ use tauri::{
 };
 
 fn repo_root_from_cwd() -> Option<std::path::PathBuf> {
-    let mut dir = std::env::current_dir().ok()?;
-    for _ in 0..8 {
-        if dir.join("scripts").join("neverlost_cli_v1.ps1").exists() {
-            return Some(dir);
-        }
-        if !dir.pop() {
-            break;
-        }
-    }
-    None
+    // Same resolution as the commands (NEVERLOST_ROOT, cwd ancestry, executable ancestry), so the tray
+    // shows the real authority state when the installed app is started outside the repository.
+    commands::repo_root().ok()
 }
 
 fn authority_state_from_disk() -> (bool, String, String, String) {
@@ -241,9 +234,6 @@ pub fn run() {
             commands::get_latest_workbench_runs,
             commands::open_path,
             commands::get_authority_status,
-            commands::start_authority,
-            commands::confirm_authority,
-            commands::end_authority,
             commands::run_neverlost_cli_action,
             commands::get_workbench_mode,
             commands::set_workbench_mode,

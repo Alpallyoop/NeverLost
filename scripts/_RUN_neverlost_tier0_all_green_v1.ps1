@@ -60,41 +60,9 @@ function Invoke-PSFileCapture {
     [Parameter(Mandatory=$true)][string]$StderrPath
   )
 
-  $argLineParts = @(
-    '-NoProfile'
-    '-NonInteractive'
-    '-ExecutionPolicy'
-    'Bypass'
-    '-File'
-    ('"' + $File + '"')
-  ) + $Args
-
-  $argLine = $argLineParts -join ' '
-
-  $proc = Start-Process `
-    -FilePath $PSExe `
-    -ArgumentList $argLine `
-    -Wait `
-    -PassThru `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput $StdoutPath `
-    -RedirectStandardError $StderrPath
-
-  $stdout = ""
-  if(Test-Path -LiteralPath $StdoutPath -PathType Leaf){
-    $stdout = Get-Content -Raw -LiteralPath $StdoutPath -Encoding UTF8
-  }
-
-  $stderr = ""
-  if(Test-Path -LiteralPath $StderrPath -PathType Leaf){
-    $stderr = Get-Content -Raw -LiteralPath $StderrPath -Encoding UTF8
-  }
-
-  return [pscustomobject]@{
-    ExitCode = [int]$proc.ExitCode
-    Stdout   = [string]$stdout
-    Stderr   = [string]$stderr
-  }
+  # Arguments may arrive pre-quoted ('"path"'); NL-InvokePsFile quotes them itself.
+  $plain = @($Args | ForEach-Object { ([string]$_).Trim('"') })
+  return NL-InvokePsFile -File $File -Arguments $plain -PsHost $PSExe -StdoutPath $StdoutPath -StderrPath $StderrPath
 }
 
 function Write-Sha256Sums {
@@ -120,7 +88,10 @@ if(-not (Test-Path -LiteralPath $RepoRoot -PathType Container)){
   Die ("MISSING_REPOROOT: " + $RepoRoot)
 }
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
+$NLStartExtra = @{}
+if(NL-IsWindowsHost){ $NLStartExtra["WindowStyle"] = "Hidden" }
 $RunId = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
 $RunRoot = Join-Path $RepoRoot ("proofs\receipts\full_green\" + $RunId)
 Ensure-Dir -Path $RunRoot

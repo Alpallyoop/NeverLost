@@ -1,0 +1,32 @@
+{
+    "project_id":  "neverlost",
+    "canonical_name":  "NeverLost",
+    "ecosystem":  {
+                      "registry_schema":  "constellation.service.registry.v1",
+                      "service_id":  "neverlost",
+                      "layer":  "foundation.identity-trust",
+                      "role":  "Identity, signing, trust, and provenance authority.",
+                      "standalone_first":  true,
+                      "upstream_services":  [
+
+                                            ],
+                      "downstream_users":  [
+                                               "covenant-gate",
+                                               "recognition",
+                                               "rebound",
+                                               "rooted",
+                                               "live-state-surgeon",
+                                               "watchtower"
+                                           ],
+                      "contract_families":  [
+                                                "identity",
+                                                "signature",
+                                                "trust",
+                                                "provenance",
+                                                "receipt"
+                                            ],
+                      "service_map_path":  ".constellation/SERVICE_MAP.md",
+                      "registry_path":  ".constellation/registry.json",
+                      "integration_doc_path":  "docs/canonical/ECOSYSTEM_INTEGRATION.md"
+                  }
+}

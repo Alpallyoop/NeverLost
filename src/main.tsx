@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 
 import App from "./App"
-import { getAuthorityStatus, startAuthority } from "./lib/api"
+import { getAuthorityStatus, getWorkbenchMode, runNeverlostCliAction } from "./lib/api"
 
 import "./index.css"
 import "./styles.css"
@@ -37,7 +37,8 @@ async function bootstrapNeverLost(): Promise<void> {
     if (autoStartAuthority) {
       const status = await getAuthorityStatus()
       if (!status.active) {
-        await startAuthority()
+        const mode = await getWorkbenchMode()
+        await runNeverlostCliAction("authority", "start", mode.mode, "workbench")
       }
     }
   } catch (error) {

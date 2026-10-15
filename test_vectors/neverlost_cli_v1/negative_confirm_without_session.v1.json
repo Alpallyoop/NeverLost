@@ -1,0 +1,9 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_confirm_without_session",
+  "kind": "negative_single",
+  "area": "authority",
+  "action": "confirm",
+  "expect_exit": 1,
+  "expect_contains": "NO_ACTIVE_SESSION"
+}

@@ -5,6 +5,7 @@ import type {
   AuthorityStatus,
   CliActionResult,
   EvidenceBundle,
+  FileTextResult,
   LatestRunInfo,
   LedgerEntry,
   TrustBundleInfo,
@@ -23,8 +24,8 @@ export async function getReceiptLedger(): Promise<LedgerEntry[]> {
   return await invoke<LedgerEntry[]>("get_receipt_ledger")
 }
 
-export async function readFileText(path: string): Promise<string> {
-  return await invoke<string>("read_file_text", { path })
+export async function readFileText(path: string): Promise<FileTextResult> {
+  return await invoke<FileTextResult>("read_file_text", { path })
 }
 
 export async function getTrustBundleInfo(): Promise<TrustBundleInfo> {
@@ -45,18 +46,6 @@ export async function openPath(path: string): Promise<void> {
 
 export async function getAuthorityStatus(): Promise<AuthorityStatus> {
   return await invoke<AuthorityStatus>("get_authority_status")
-}
-
-export async function startAuthority(): Promise<AuthorityStatus> {
-  return await invoke<AuthorityStatus>("start_authority")
-}
-
-export async function confirmAuthority(): Promise<AuthorityStatus> {
-  return await invoke<AuthorityStatus>("confirm_authority")
-}
-
-export async function endAuthority(): Promise<AuthorityStatus> {
-  return await invoke<AuthorityStatus>("end_authority")
 }
 
 export async function copyText(text: string): Promise<void> {

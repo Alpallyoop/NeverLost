@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NeverLost trust_bundle.json v1",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/principalsBundle" },
+    { "$ref": "#/$defs/authoritiesBundle" }
+  ],
+  "$defs": {
+    "principal": {
+      "type": "string",
+      "pattern": "^single-tenant/(owner|org_admin|device_admin|operator|auditor|device_agent|watchtower_authority)/.+$"
+    },
+    "sshEd25519PublicKey": {
+      "type": "string",
+      "pattern": "^ssh-ed25519\\s+.+"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "namespaceList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "principalKey": {
+      "type": "object",
+      "required": ["key_id", "alg", "pubkey_path", "pubkey_sha256", "pubkey"],
+      "properties": {
+        "key_id": { "type": "string", "minLength": 1 },
+        "alg": { "const": "ssh-ed25519" },
+        "pubkey_path": { "type": "string", "minLength": 1 },
+        "pubkey_sha256": { "$ref": "#/$defs/sha256" },
+        "pubkey": { "$ref": "#/$defs/sshEd25519PublicKey" },
+        "namespaces": { "$ref": "#/$defs/namespaceList" }
+      },
+      "additionalProperties": false
+    },
+    "principalEntry": {
+      "type": "object",
+      "required": ["principal", "keys"],
+      "properties": {
+        "principal": { "$ref": "#/$defs/principal" },
+        "namespaces": { "$ref": "#/$defs/namespaceList" },
+        "keys": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/principalKey" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "principalsBundle": {
+      "type": "object",
+      "required": ["schema", "principals"],
+      "properties": {
+        "schema": { "const": "neverlost.trust_bundle.v1" },
+        "created_utc": { "type": "string", "minLength": 1 },
+        "principals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/principalEntry" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorityEntry": {
+      "type": "object",
+      "required": ["principal", "key_id", "alg", "pubkey_path", "pubkey_sha256", "allowed_namespaces"],
+      "properties": {
+        "principal": { "$ref": "#/$defs/principal" },
+        "key_id": { "type": "string", "minLength": 1 },
+        "alg": { "const": "ssh-ed25519" },
+        "pubkey_path": { "type": "string", "minLength": 1 },
+        "pubkey_sha256": { "$ref": "#/$defs/sha256" },
+        "allowed_namespaces": { "$ref": "#/$defs/namespaceList" }
+      },
+      "additionalProperties": false
+    },
+    "authoritiesBundle": {
+      "type": "object",
+      "required": ["version", "authorities"],
+      "properties": {
+        "version": { "const": 1 },
+        "authorities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/authorityEntry" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

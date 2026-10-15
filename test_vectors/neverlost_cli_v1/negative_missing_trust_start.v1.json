@@ -1,0 +1,24 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_missing_trust_start",
+  "kind": "sequence",
+  "setup": {
+    "remove_files": [
+      "proofs/trust/trust_bundle.json"
+    ]
+  },
+  "steps": [
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 1,
+      "expect_contains": "TRUST_BUNDLE_INVALID:MISSING"
+    },
+    {
+      "area": "authority",
+      "action": "status",
+      "expect_exit": 0,
+      "expect_contains": "AUTHORITY_STATUS=NONE"
+    }
+  ]
+}

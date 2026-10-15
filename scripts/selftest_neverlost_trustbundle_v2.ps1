@@ -38,7 +38,8 @@ $AclPath    = Join-Path $ScriptsDir "enforce_trust_acl_v1.ps1"
 if(-not (Test-Path -LiteralPath $LibPath -PathType Leaf)){ Die ("MISSING_LIB: " + $LibPath) }
 if(-not (Test-Path -LiteralPath $AclPath -PathType Leaf)){ Die ("MISSING_ACL_ENFORCER: " + $AclPath) }
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
 if(-not (Test-Path -LiteralPath $PSExe -PathType Leaf)){ Die ("MISSING_POWERSHELL_EXE: " + $PSExe) }
 
 & $PSExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $AclPath -RepoRoot $RepoRoot | Out-Null
@@ -49,6 +50,9 @@ if($LASTEXITCODE -ne 0){ Die ("ACL_CHILD_FAILED: " + $LASTEXITCODE) }
 if(-not (Get-Command NL-LoadTrustBundleInfoV1 -ErrorAction SilentlyContinue)){ Die "SELFTEST_FAIL: MISSING_FUNC NL-LoadTrustBundleInfoV1" }
 if(-not (Get-Command NL-GetTrustBundleEntriesCompat -ErrorAction SilentlyContinue)){ Die "SELFTEST_FAIL: MISSING_FUNC NL-GetTrustBundleEntriesCompat" }
 if(-not (Get-Command NL-WriteAllowedSignersFromTrust -ErrorAction SilentlyContinue)){ Die "SELFTEST_FAIL: MISSING_FUNC NL-WriteAllowedSignersFromTrust" }
+
+# Full fail-closed verification (schema, closed role set, key material, namespaces) before the compat reader.
+[void](NL-AssertTrustBundleV1 -RepoRoot $RepoRoot -ExpectedPrincipal $ExpectedPrincipal -ExpectedNamespaces $ExpectedNamespaces)
 
 $info = NL-LoadTrustBundleInfoV1 $RepoRoot
 $entries = @(NL-GetTrustBundleEntriesCompat $info.Obj)

@@ -1,0 +1,24 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_malformed_trust_start",
+  "kind": "sequence",
+  "setup": {
+    "write_files": {
+      "proofs/trust/trust_bundle.json": "{\"schema\":\"neverlost.trust_bundle.v1\",\"principals\":\"not-an-array\"}"
+    }
+  },
+  "steps": [
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 1,
+      "expect_contains": "TRUST_BUNDLE_INVALID:PRINCIPALS_NOT_ARRAY"
+    },
+    {
+      "area": "authority",
+      "action": "status",
+      "expect_exit": 0,
+      "expect_contains": "AUTHORITY_STATUS=NONE"
+    }
+  ]
+}

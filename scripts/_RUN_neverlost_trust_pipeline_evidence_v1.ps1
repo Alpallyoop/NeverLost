@@ -52,7 +52,7 @@ function Escape-Json([string]$s){
 }
 
 function To-CanonJson-Flat([hashtable]$h){
-  $keys = @($h.Keys | Sort-Object)
+  $keys = [string[]]@($h.Keys | ForEach-Object { [string]$_ }); [System.Array]::Sort($keys, [System.StringComparer]::Ordinal)
   $parts = New-Object System.Collections.Generic.List[string]
   foreach($k in $keys){
     $v = $h[$k]
@@ -111,24 +111,13 @@ $shaPath = Join-Path $runDir "sha256sums.txt"
 
 $startedUtc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
 if(-not (Test-Path -LiteralPath $PSExe -PathType Leaf)){
   Die ("MISSING_POWERSHELL_EXE: " + $PSExe)
 }
 
-$p = Start-Process `
-  -FilePath $PSExe `
-  -ArgumentList @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$RunnerPath,
-    "-RepoRoot",$RepoRoot
-  ) `
-  -Wait `
-  -PassThru `
-  -RedirectStandardOutput $stdoutPath `
-  -RedirectStandardError $stderrPath
+$p = NL-InvokePsFile -File $RunnerPath -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $stdoutPath -StderrPath $stderrPath
 
 $finishedUtc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 

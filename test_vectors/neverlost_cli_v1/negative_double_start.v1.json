@@ -1,0 +1,25 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_double_start",
+  "kind": "sequence",
+  "steps": [
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 0,
+      "expect_contains": "AUTHORITY_STARTED_OK"
+    },
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 2,
+      "expect_contains": "AUTHORITY_START_DENIED_ALREADY_ACTIVE"
+    },
+    {
+      "area": "authority",
+      "action": "status",
+      "expect_exit": 0,
+      "expect_contains": "AUTHORITY_STATUS=ACTIVE"
+    }
+  ]
+}

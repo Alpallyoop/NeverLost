@@ -32,7 +32,7 @@ function EscapeJson([string]$s){
 }
 
 function To-CanonJson-Flat([hashtable]$h){
-  $keys = @($h.Keys | Sort-Object)
+  $keys = [string[]]@($h.Keys | ForEach-Object { [string]$_ }); [System.Array]::Sort($keys, [System.StringComparer]::Ordinal)
   $parts = New-Object System.Collections.Generic.List[string]
   foreach($k in $keys){
     $v = $h[$k]
@@ -46,6 +46,14 @@ function To-CanonJson-Flat([hashtable]$h){
     [void]$parts.Add('"' + (EscapeJson $k) + '":' + $val)
   }
   return '{' + ($parts -join ',') + '}'
+}
+
+function WriteAtomicUtf8NoBom([string]$Path,[string]$Text){
+  $tmp = $Path + ".tmp"
+  [System.IO.File]::WriteAllText($tmp, $Text, (New-Object System.Text.UTF8Encoding($false)))
+  if(Test-Path -LiteralPath $Path -PathType Leaf){ [System.IO.File]::Replace($tmp, $Path, [NullString]::Value) } else { [System.IO.File]::Move($tmp, $Path) }
+  $back = [System.IO.File]::ReadAllText($Path, (New-Object System.Text.UTF8Encoding($false)))
+  if($back -cne $Text){ Die ("SESSION_WRITE_VERIFY_FAILED: " + $Path) }
 }
 
 function Sha256HexString([string]$Text){
@@ -89,6 +97,16 @@ $TrustPath     = Join-Path $TrustDir "trust_bundle.json"
 $principal = ((ReadUtf8 $PrincipalPath).Split("`n")[0] + "").Trim()
 if([string]::IsNullOrWhiteSpace($principal)){ Die "EMPTY_PRINCIPAL" }
 
+# Fail closed on malformed, missing, mismatched or stale trust before any authority receipt is written.
+. (Join-Path (Join-Path $RepoRoot "scripts") "_lib_neverlost_v1.ps1")
+$ExpectedNsPath = Join-Path $TrustDir "expected_namespaces_principal0.txt"
+$expectedNs = @()
+if(Test-Path -LiteralPath $ExpectedNsPath -PathType Leaf){
+  $expectedNs = @((ReadUtf8 $ExpectedNsPath).Split("`n") | ForEach-Object { $_.Trim() } | Where-Object { $_.Length -gt 0 })
+}
+$trustEntries = NL-AssertTrustBundleV1 -RepoRoot $RepoRoot -ExpectedPrincipal $principal -ExpectedNamespaces $expectedNs
+NL-AssertAllowedSignersCurrentV1 $RepoRoot $trustEntries
+
 $trustSha = Sha256HexFile $TrustPath
 $allowedSha = Sha256HexFile $AllowedPath
 
@@ -119,7 +137,7 @@ $session = [ordered]@{
   session_id = $sessionId
   started_utc = $StartTimeUtc
 }
-[System.IO.File]::WriteAllText($SessionPath, (To-CanonJson-Flat $session) + "`n", (New-Object System.Text.UTF8Encoding($false)))
+WriteAtomicUtf8NoBom $SessionPath ((To-CanonJson-Flat $session) + "`n")
 
 Write-Host "AUTHORITY_STARTED_OK" -ForegroundColor Green
 Write-Host ("SESSION_ID=" + $sessionId) -ForegroundColor Green
