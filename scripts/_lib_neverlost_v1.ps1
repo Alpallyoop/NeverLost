@@ -87,7 +87,7 @@ function NL-JsonCanon($v){
   if($v -is [datetime]){ return ("""" + (NL-JsonEscape $v.ToUniversalTime().ToString("o")) + """") }
   if($v -is [string]){ return ("""" + (NL-JsonEscape $v) + """") }
   if($v -is [System.Collections.IDictionary]){
-    $keys = @(@($v.Keys) | ForEach-Object { [string]$_ } | Sort-Object)
+    $keys = [string[]]@(@($v.Keys) | ForEach-Object { [string]$_ }); [System.Array]::Sort($keys, [System.StringComparer]::Ordinal)
     $parts = New-Object System.Collections.Generic.List[string]
     foreach($k in $keys){ [void]$parts.Add(("""" + (NL-JsonEscape $k) + """") + ":" + (NL-JsonCanon $v[$k])) }
     return ("{" + (($parts.ToArray()) -join ",") + "}")
@@ -130,33 +130,6 @@ function NL-EnumerateSignerEntries($Tb){
   $signersA = @(@($signers))
   foreach($s in $signersA){ if($null -eq $s){ continue }; [void]$out.Add($s) }
   return $out.ToArray()
-}
-
-function NL-WriteAllowedSignersFromTrust([string]$RepoRoot){
-  $tbInfo = NL-LoadTrustBundle $RepoRoot
-  $entries = NL-EnumerateSignerEntries $tbInfo.Tb
-  $entriesA = @(@($entries))
-  if($entriesA.Count -lt 1){ NL-Die "TRUST_BUNDLE_HAS_NO_SIGNERS" }
-  $rows = New-Object System.Collections.Generic.List[string]
-  foreach($e in $entriesA){
-    $principal = [string]$e.principal
-    $pub = [string]$e.pubkey
-    $kid = [string]$e.key_id
-    $ns = @(@($e.namespaces) | ForEach-Object { [string]$_ } | Sort-Object)
-    $nsCsv = (@($ns) -join ",")
-    if([string]::IsNullOrWhiteSpace($principal)){ NL-Die "SIGNER_MISSING_PRINCIPAL" }
-    if([string]::IsNullOrWhiteSpace($pub)){ NL-Die ("SIGNER_MISSING_PUBKEY principal=" + $principal) }
-    if([string]::IsNullOrWhiteSpace($nsCsv)){ NL-Die ("SIGNER_MISSING_NAMESPACES principal=" + $principal) }
-    $opt = ("namespaces=" + $nsCsv)
-    $line = $principal + " " + $opt + " " + $pub
-    if(-not [string]::IsNullOrWhiteSpace($kid)){ $line = $line + " " + $kid }
-    [void]$rows.Add($line)
-  }
-  $rows2 = @(@($rows.ToArray()) | Sort-Object)
-  $asPath = Join-Path $RepoRoot "proofs\trust\allowed_signers"
-  NL-WriteUtf8NoBomLf $asPath ((@($rows2) -join "`n") + "`n")
-  NL-AppendReceipt $RepoRoot "neverlost.allowed_signers.write.v1" @{ allowed_signers=$asPath; allowed_signers_sha256=(NL-Sha256HexFile $asPath); trust_bundle_sha256=(NL-Sha256HexBytes ([System.Text.Encoding]::UTF8.GetBytes($tbInfo.Raw))) } | Out-Null
-  return $asPath
 }
 
 # === NL_TRUSTBUNDLE_PRINCIPALS_COMPAT_V1 ===
@@ -311,41 +284,276 @@ function NL-GetTrustBundleEntriesCompat([object]$TrustBundleObj){
   return @($out.ToArray())
 }
 
-function NL-WriteAllowedSignersFromTrust([string]$RepoRoot){
-  $root    = (Resolve-Path -LiteralPath $RepoRoot).Path
-  $tbInfo  = NL-LoadTrustBundleInfoV1 $root
-  $entries = NL-GetTrustBundleEntriesCompat $tbInfo.Obj
+# === NL_TRUSTBUNDLE_VERIFIER_V1 ===
+# Fail-closed verifier for neverlost.trust_bundle.v1 (schemas/trust_bundle_v1.schema.json).
+# Recomputes every claim it can: principal format and closed role set, key fields, pubkey_sha256 over
+# the exact bytes of pubkey_path, pubkey equality with the key file, namespace sets, uniqueness.
+# Every failure throws "TRUST_BUNDLE_INVALID:<CODE> <detail>" or "TRUST_EXPECTED_<...>".
+# Returns normalized entries: principal, key_id, pubkey (type + base64 only), pubkey_sha256, namespaces (ordinal-sorted).
 
-  $asPath = Join-Path $root 'proofs\trust\allowed_signers'
-  $lines  = New-Object System.Collections.Generic.List[string]
-
-  # Deterministic ordering without Sort-Object -Property principal,pubkey (avoids PS5.1 ArgumentException)
-  $tmp = New-Object System.Collections.Generic.List[object]
-  foreach($e in @($entries)){
-    if($null -eq $e){ continue }
-    $p = [string]$e.principal
-    $k = [string]$e.pubkey
-    $sortKey = $p + "`n" + $k
-    [void]$tmp.Add([pscustomobject]@{ sort_key=$sortKey; entry=$e })
-  }
-
-  foreach($row in ($tmp | Sort-Object -Property sort_key)){
-    $e = $row.entry
-    $principal = [string]$e.principal
-    $pubkey    = [string]$e.pubkey
-    $ns        = @($e.namespaces) | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_.Length -gt 0 } | Sort-Object
-
-    if($ns.Count -gt 0){
-      $opt = 'namespaces="' + ($ns -join ',') + '"'
-      [void]$lines.Add(($principal + ' ' + $opt + ' ' + $pubkey))
-    } else {
-      [void]$lines.Add(($principal + ' ' + $pubkey))
+function NL-GetPropRaw([object]$Obj,[string]$Name){
+  # Like NL-GetPropObj but never unrolls arrays (a one-element JSON array stays an array).
+  if($null -eq $Obj){ return $null }
+  if($Obj.PSObject -and $Obj.PSObject.Properties){
+    $p = $Obj.PSObject.Properties[$Name]
+    if($null -ne $p){
+      if($null -eq $p.Value){ return $null }
+      return ,$p.Value
     }
   }
+  return $null
+}
 
-  $txt = (@($lines) -join "`n") + "`n"
-  $t = ($txt -replace "`r`n","`n") -replace "`r","`n"
-  if(-not $t.EndsWith("`n")){ $t += "`n" }
-  [System.IO.File]::WriteAllBytes($asPath, (New-Object System.Text.UTF8Encoding($false)).GetBytes($t))
+$script:NL_TrustRolesV1 = @("owner","org_admin","device_admin","operator","auditor","device_agent","watchtower_authority")
+$script:NL_PrincipalRegexV1 = '^single-tenant/(owner|org_admin|device_admin|operator|auditor|device_agent|watchtower_authority)/[^\s,"]+$'
+$script:NL_NamespaceRegexV1 = '^[A-Za-z0-9][A-Za-z0-9._/\-]*$'
+$script:NL_PubkeyRegexV1 = '^ssh-ed25519 [A-Za-z0-9+/]+={0,2}$'
+
+function NL-SortOrdinal([string[]]$Items){
+  $arr = @(@($Items) | Where-Object { $null -ne $_ })
+  $a = [string[]]$arr
+  [System.Array]::Sort($a, [System.StringComparer]::Ordinal)
+  return ,$a
+}
+
+function NL-TrustFail([string]$Code,[string]$Detail){
+  $m = "TRUST_BUNDLE_INVALID:" + $Code
+  if(-not [string]::IsNullOrWhiteSpace($Detail)){ $m = $m + " " + $Detail }
+  throw $m
+}
+
+function NL-AssertOnlyProps([object]$Obj,[string[]]$Allowed,[string]$Where){
+  foreach($n in @(NL-GetPropNames $Obj)){
+    if(@($Allowed) -notcontains $n){ NL-TrustFail "UNKNOWN_FIELD" ($Where + "." + $n) }
+  }
+}
+
+function NL-IsJsonArray([object]$v){
+  return ($v -is [System.Array]) -or ($v -is [System.Collections.IList] -and -not ($v -is [string]))
+}
+
+function NL-ReadNamespaceList([object]$Owner,[string]$Prop,[string]$Where,[bool]$Required){
+  $names = @(NL-GetPropNames $Owner)
+  if($names -notcontains $Prop){
+    if($Required){ NL-TrustFail "NAMESPACES_MISSING" $Where }
+    return @()
+  }
+  $v = (NL-GetPropRaw $Owner $Prop)
+  if(-not (NL-IsJsonArray $v)){ NL-TrustFail "NAMESPACES_NOT_ARRAY" $Where }
+  $list = @($v)
+  if($list.Count -lt 1){ NL-TrustFail "NAMESPACES_EMPTY" $Where }
+  $seen = @{}
+  $out = New-Object System.Collections.Generic.List[string]
+  foreach($x in $list){
+    if(-not ($x -is [string])){ NL-TrustFail "NAMESPACE_NOT_STRING" $Where }
+    $s = [string]$x
+    if($s -cnotmatch $script:NL_NamespaceRegexV1){ NL-TrustFail "NAMESPACE_FORMAT" ($Where + " value=" + $s) }
+    if($seen.ContainsKey($s)){ NL-TrustFail "NAMESPACE_DUPLICATE" ($Where + " value=" + $s) }
+    $seen[$s] = $true
+    [void]$out.Add($s)
+  }
+  return @($out.ToArray())
+}
+
+function NL-ReadRequiredString([object]$Obj,[string]$Prop,[string]$Where){
+  if(@(NL-GetPropNames $Obj) -notcontains $Prop){ NL-TrustFail "FIELD_MISSING" ($Where + "." + $Prop) }
+  $v = NL-GetPropRaw $Obj $Prop
+  if(-not ($v -is [string]) -or [string]::IsNullOrWhiteSpace([string]$v)){ NL-TrustFail "FIELD_EMPTY_OR_NOT_STRING" ($Where + "." + $Prop) }
+  return [string]$v
+}
+
+function NL-ResolvePubkeyFile([string]$RepoRoot,[string]$Rel,[string]$Where){
+  if($Rel -match '^[A-Za-z]:' -or $Rel.StartsWith('/') -or $Rel.StartsWith('\')){ NL-TrustFail "PUBKEY_PATH_NOT_RELATIVE" ($Where + " " + $Rel) }
+  foreach($seg in ($Rel -split '[\\/]')){ if($seg -eq '..'){ NL-TrustFail "PUBKEY_PATH_TRAVERSAL" ($Where + " " + $Rel) } }
+  $p = $RepoRoot
+  foreach($seg in ($Rel -split '[\\/]')){ if($seg.Length -gt 0){ $p = Join-Path $p $seg } }
+  if(-not (Test-Path -LiteralPath $p -PathType Leaf)){ NL-TrustFail "PUBKEY_FILE_MISSING" ($Where + " " + $Rel) }
+  return $p
+}
+
+function NL-PubkeyCore([string]$Text){
+  $t = ($Text -replace "[\r\n]+"," ").Trim()
+  $parts = @($t -split '\s+')
+  if($parts.Count -lt 2){ return "" }
+  return ($parts[0] + " " + $parts[1])
+}
+
+function NL-VerifyKeyMaterial([string]$RepoRoot,[string]$PubkeyPath,[string]$ClaimedSha,[string]$ClaimedPubkey,[string]$Where){
+  if($ClaimedSha -cnotmatch '^[a-f0-9]{64}$'){ NL-TrustFail "PUBKEY_SHA256_FORMAT" $Where }
+  $file = NL-ResolvePubkeyFile $RepoRoot $PubkeyPath $Where
+  $actualSha = NL-Sha256HexFile $file
+  if($actualSha -cne $ClaimedSha){ NL-TrustFail "PUBKEY_SHA256_MISMATCH" ($Where + " claimed=" + $ClaimedSha + " actual=" + $actualSha) }
+  $fileCore = NL-PubkeyCore ([System.IO.File]::ReadAllText($file))
+  if($fileCore -cnotmatch $script:NL_PubkeyRegexV1){ NL-TrustFail "PUBKEY_FILE_FORMAT" $Where }
+  if(-not [string]::IsNullOrEmpty($ClaimedPubkey)){
+    $claimCore = NL-PubkeyCore $ClaimedPubkey
+    if($claimCore -cnotmatch $script:NL_PubkeyRegexV1){ NL-TrustFail "PUBKEY_FORMAT" $Where }
+    if($claimCore -cne $fileCore){ NL-TrustFail "PUBKEY_FILE_MISMATCH" $Where }
+  }
+  return $fileCore
+}
+
+function NL-AssertTrustBundleV1 {
+  param(
+    [Parameter(Mandatory=$true)][string]$RepoRoot,
+    [string]$TrustBundlePath = "",
+    [string]$ExpectedPrincipal = "",
+    [string[]]$ExpectedNamespaces = @()
+  )
+  $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+  if([string]::IsNullOrWhiteSpace($TrustBundlePath)){ $TrustBundlePath = Join-Path (Join-Path (Join-Path $root "proofs") "trust") "trust_bundle.json" }
+  if(-not (Test-Path -LiteralPath $TrustBundlePath -PathType Leaf)){ NL-TrustFail "MISSING" $TrustBundlePath }
+
+  $bytes = [System.IO.File]::ReadAllBytes($TrustBundlePath)
+  if($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF){ NL-TrustFail "UTF8_BOM" "" }
+  $raw = (New-Object System.Text.UTF8Encoding($false,$true)).GetString($bytes)
+  if([string]::IsNullOrWhiteSpace($raw)){ NL-TrustFail "EMPTY" "" }
+  try { $obj = $raw | ConvertFrom-Json -ErrorAction Stop } catch { NL-TrustFail "JSON_PARSE" $_.Exception.Message }
+  if($null -eq $obj -or -not ($obj -is [System.Management.Automation.PSCustomObject])){ NL-TrustFail "NOT_OBJECT" "" }
+
+  $top = @(NL-GetPropNames $obj)
+  $entries = New-Object System.Collections.Generic.List[object]
+  $seenPrincipals = @{}
+  $seenKeyIds = @{}
+
+  if($top -contains "principals"){
+    NL-AssertOnlyProps $obj @("schema","created_utc","principals") "bundle"
+    $schema = NL-GetPropRaw $obj "schema"
+    if(-not ($schema -is [string]) -or [string]$schema -cne "neverlost.trust_bundle.v1"){ NL-TrustFail "SCHEMA_ID" ([string]$schema) }
+    if($top -contains "created_utc"){
+      $cu = NL-GetPropRaw $obj "created_utc"
+      if(-not ($cu -is [string]) -and -not ($cu -is [datetime])){ NL-TrustFail "CREATED_UTC_NOT_STRING" "" }
+    }
+    $pv = NL-GetPropRaw $obj "principals"
+    if(-not (NL-IsJsonArray $pv)){ NL-TrustFail "PRINCIPALS_NOT_ARRAY" "" }
+    $plist = @($pv)
+    if($plist.Count -lt 1){ NL-TrustFail "PRINCIPALS_EMPTY" "" }
+    $pi = 0
+    foreach($p in $plist){
+      $w = "principals[" + $pi + "]"
+      if(-not ($p -is [System.Management.Automation.PSCustomObject])){ NL-TrustFail "PRINCIPAL_NOT_OBJECT" $w }
+      NL-AssertOnlyProps $p @("principal","namespaces","keys") $w
+      $principal = NL-ReadRequiredString $p "principal" $w
+      if($principal -cnotmatch $script:NL_PrincipalRegexV1){ NL-TrustFail "PRINCIPAL_FORMAT" ($w + " " + $principal) }
+      if($seenPrincipals.ContainsKey($principal)){ NL-TrustFail "PRINCIPAL_DUPLICATE" $principal }
+      $seenPrincipals[$principal] = $true
+      $nsP = NL-ReadNamespaceList $p "namespaces" $w $false
+      $kv = NL-GetPropRaw $p "keys"
+      if(@(NL-GetPropNames $p) -notcontains "keys"){ NL-TrustFail "KEYS_MISSING" $w }
+      if(-not (NL-IsJsonArray $kv)){ NL-TrustFail "KEYS_NOT_ARRAY" $w }
+      $klist = @($kv)
+      if($klist.Count -lt 1){ NL-TrustFail "KEYS_EMPTY" $w }
+      $ki = 0
+      foreach($k in $klist){
+        $wk = $w + ".keys[" + $ki + "]"
+        if(-not ($k -is [System.Management.Automation.PSCustomObject])){ NL-TrustFail "KEY_NOT_OBJECT" $wk }
+        NL-AssertOnlyProps $k @("key_id","alg","pubkey_path","pubkey_sha256","pubkey","namespaces") $wk
+        $keyId = NL-ReadRequiredString $k "key_id" $wk
+        $alg = NL-ReadRequiredString $k "alg" $wk
+        if($alg -cne "ssh-ed25519"){ NL-TrustFail "ALG_UNSUPPORTED" ($wk + " " + $alg) }
+        $pp = NL-ReadRequiredString $k "pubkey_path" $wk
+        $ps = NL-ReadRequiredString $k "pubkey_sha256" $wk
+        $pk = NL-ReadRequiredString $k "pubkey" $wk
+        if($seenKeyIds.ContainsKey($keyId)){ NL-TrustFail "KEY_ID_DUPLICATE" $keyId }
+        $seenKeyIds[$keyId] = $true
+        $core = NL-VerifyKeyMaterial $root $pp $ps $pk $wk
+        $nsK = NL-ReadNamespaceList $k "namespaces" $wk $false
+        $nsAll = @{}
+        foreach($n in @($nsP) + @($nsK)){ if($null -ne $n){ $nsAll[[string]$n] = $true } }
+        if($nsAll.Count -lt 1){ NL-TrustFail "NAMESPACES_MISSING" $wk }
+        [void]$entries.Add([pscustomobject]@{ principal=$principal; key_id=$keyId; pubkey=$core; pubkey_sha256=$ps; namespaces=(NL-SortOrdinal ([string[]]@($nsAll.Keys))) })
+        $ki++
+      }
+      $pi++
+    }
+  }
+  elseif($top -contains "authorities"){
+    # Legacy v1 shape (schemas/trust_bundle_v1.schema.json authoritiesBundle). Accepted until migrated.
+    NL-AssertOnlyProps $obj @("version","authorities") "bundle"
+    $ver = NL-GetPropRaw $obj "version"
+    if(-not (($ver -is [int]) -or ($ver -is [long])) -or [long]$ver -ne 1){ NL-TrustFail "LEGACY_VERSION" ([string]$ver) }
+    $av = NL-GetPropRaw $obj "authorities"
+    if(-not (NL-IsJsonArray $av)){ NL-TrustFail "AUTHORITIES_NOT_ARRAY" "" }
+    $alist = @($av)
+    if($alist.Count -lt 1){ NL-TrustFail "AUTHORITIES_EMPTY" "" }
+    $ai = 0
+    foreach($a in $alist){
+      $w = "authorities[" + $ai + "]"
+      if(-not ($a -is [System.Management.Automation.PSCustomObject])){ NL-TrustFail "AUTHORITY_NOT_OBJECT" $w }
+      NL-AssertOnlyProps $a @("principal","key_id","alg","pubkey_path","pubkey_sha256","allowed_namespaces") $w
+      $principal = NL-ReadRequiredString $a "principal" $w
+      if($principal -cnotmatch $script:NL_PrincipalRegexV1){ NL-TrustFail "PRINCIPAL_FORMAT" ($w + " " + $principal) }
+      $keyId = NL-ReadRequiredString $a "key_id" $w
+      $alg = NL-ReadRequiredString $a "alg" $w
+      if($alg -cne "ssh-ed25519"){ NL-TrustFail "ALG_UNSUPPORTED" ($w + " " + $alg) }
+      if($seenKeyIds.ContainsKey($keyId)){ NL-TrustFail "KEY_ID_DUPLICATE" $keyId }
+      $seenKeyIds[$keyId] = $true
+      $pp = NL-ReadRequiredString $a "pubkey_path" $w
+      $ps = NL-ReadRequiredString $a "pubkey_sha256" $w
+      $core = NL-VerifyKeyMaterial $root $pp $ps "" $w
+      $ns = NL-ReadNamespaceList $a "allowed_namespaces" $w $true
+      [void]$entries.Add([pscustomobject]@{ principal=$principal; key_id=$keyId; pubkey=$core; pubkey_sha256=$ps; namespaces=(NL-SortOrdinal ([string[]]$ns)) })
+      $ai++
+    }
+  }
+  else {
+    NL-TrustFail "SHAPE_UNKNOWN" ("top_keys=" + (@($top) -join ","))
+  }
+
+  $out = @($entries.ToArray())
+
+  if(-not [string]::IsNullOrWhiteSpace($ExpectedPrincipal)){
+    $match = @($out | Where-Object { [string]$_.principal -ceq $ExpectedPrincipal })
+    if($match.Count -lt 1){ throw ("TRUST_EXPECTED_PRINCIPAL_MISMATCH expected=" + $ExpectedPrincipal) }
+    if(@($ExpectedNamespaces).Count -gt 0){
+      $want = (NL-SortOrdinal ([string[]]@($ExpectedNamespaces | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_.Length -gt 0 } | Select-Object -Unique))) -join ","
+      $ok = $false
+      foreach($m in $match){ if(((@($m.namespaces)) -join ",") -ceq $want){ $ok = $true } }
+      if(-not $ok){ throw ("TRUST_EXPECTED_NAMESPACES_MISMATCH principal=" + $ExpectedPrincipal + " expected=" + $want + " actual=" + ((@($match[0].namespaces)) -join ",")) }
+    }
+  }
+  return ,$out
+}
+
+# Canonical OpenSSH allowed_signers text derived from verified trust entries.
+# One line per key: <principal> namespaces="<ns,...>" <type> <base64>; lines ordinal-sorted; LF; trailing LF.
+# -Namespace filters to keys that may sign that namespace and restricts the namespaces option to it.
+function NL-AllowedSignersTextV1 {
+  param(
+    [Parameter(Mandatory=$true)][object[]]$Entries,
+    [string]$Namespace = ""
+  )
+  $lines = New-Object System.Collections.Generic.List[string]
+  foreach($e in @($Entries)){
+    $ns = @($e.namespaces)
+    if(-not [string]::IsNullOrWhiteSpace($Namespace)){
+      if($ns -cnotcontains $Namespace){ continue }
+      $ns = @($Namespace)
+    }
+    if($ns.Count -lt 1){ throw ("SIGNER_MISSING_NAMESPACES principal=" + [string]$e.principal) }
+    [void]$lines.Add(([string]$e.principal + ' namespaces="' + ((NL-SortOrdinal ([string[]]$ns)) -join ',') + '" ' + [string]$e.pubkey))
+  }
+  if($lines.Count -lt 1){ throw "ALLOWED_SIGNERS_NO_MATCHING_SIGNERS" }
+  $sorted = NL-SortOrdinal ([string[]]$lines.ToArray())
+  return ((@($sorted) -join "`n") + "`n")
+}
+
+# Writes proofs/trust/allowed_signers from the VERIFIED trust bundle (fail closed on any trust defect).
+function NL-WriteAllowedSignersFromTrust([string]$RepoRoot){
+  $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+  $entries = NL-AssertTrustBundleV1 -RepoRoot $root
+  $text = NL-AllowedSignersTextV1 -Entries $entries
+  $asPath = Join-Path (Join-Path (Join-Path $root "proofs") "trust") "allowed_signers"
+  [System.IO.File]::WriteAllBytes($asPath, (New-Object System.Text.UTF8Encoding($false)).GetBytes($text))
   return $asPath
+}
+
+# Fails closed when proofs/trust/allowed_signers is not exactly what the verified trust bundle derives.
+function NL-AssertAllowedSignersCurrentV1([string]$RepoRoot,[object[]]$Entries){
+  $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+  $asPath = Join-Path (Join-Path (Join-Path $root "proofs") "trust") "allowed_signers"
+  if(-not (Test-Path -LiteralPath $asPath -PathType Leaf)){ throw ("TRUST_ALLOWED_SIGNERS_MISSING: " + $asPath) }
+  $want = NL-AllowedSignersTextV1 -Entries $Entries
+  $have = (New-Object System.Text.UTF8Encoding($false)).GetString([System.IO.File]::ReadAllBytes($asPath))
+  if($have -cne $want){ throw "TRUST_ALLOWED_SIGNERS_STALE (run scripts/make_allowed_signers_v1.ps1)" }
 }

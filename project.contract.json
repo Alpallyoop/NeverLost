@@ -25,8 +25,8 @@
                                                 "provenance",
                                                 "receipt"
                                             ],
-                      "service_map_path":  "../Constellation/ecosystem/SERVICE_MAP.md",
-                      "registry_path":  "../Constellation/registry/services.json",
+                      "service_map_path":  ".constellation/SERVICE_MAP.md",
+                      "registry_path":  ".constellation/registry.json",
                       "integration_doc_path":  "docs/canonical/ECOSYSTEM_INTEGRATION.md"
                   }
 }

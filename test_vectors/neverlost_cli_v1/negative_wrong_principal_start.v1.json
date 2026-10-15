@@ -1,0 +1,24 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_wrong_principal_start",
+  "kind": "sequence",
+  "setup": {
+    "write_files": {
+      "proofs/trust/expected_principal0.txt": "single-tenant/watchtower_authority/authority/not-watchtower\n"
+    }
+  },
+  "steps": [
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 1,
+      "expect_contains": "TRUST_EXPECTED_PRINCIPAL_MISMATCH"
+    },
+    {
+      "area": "authority",
+      "action": "status",
+      "expect_exit": 0,
+      "expect_contains": "AUTHORITY_STATUS=NONE"
+    }
+  ]
+}

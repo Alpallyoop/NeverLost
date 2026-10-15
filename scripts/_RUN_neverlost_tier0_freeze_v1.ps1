@@ -10,10 +10,14 @@ function Die {
   throw $Message
 }
 
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$NLStartExtra = @{}
+if(NL-IsWindowsHost){ $NLStartExtra["WindowStyle"] = "Hidden" }
+
 function Invoke-AllGreen {
   param([Parameter(Mandatory=$true)][string]$RepoRoot)
 
-  $PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+  $PSExe = NL-ResolvePsHost
   $Script = Join-Path $RepoRoot "scripts\_RUN_neverlost_tier0_all_green_v1.ps1"
 
   $tmp = Join-Path $RepoRoot "proofs\receipts\freeze_tmp"
@@ -41,7 +45,7 @@ function Invoke-AllGreen {
     -ArgumentList $argLine `
     -Wait `
     -PassThru `
-    -WindowStyle Hidden `
+    @NLStartExtra `
     -RedirectStandardOutput $stdoutPath `
     -RedirectStandardError $stderrPath
 

@@ -1,0 +1,24 @@
+{
+  "schema": "neverlost.cli.vector.v1",
+  "name": "negative_stale_allowed_signers_start",
+  "kind": "sequence",
+  "setup": {
+    "write_files": {
+      "proofs/trust/allowed_signers": "single-tenant/operator/x/stale namespaces=\"watchtower\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHBI4Mqg+vdDmY+YyoNDBebHsx7MWrsiOj16587famX/\n"
+    }
+  },
+  "steps": [
+    {
+      "area": "authority",
+      "action": "start",
+      "expect_exit": 1,
+      "expect_contains": "TRUST_ALLOWED_SIGNERS_STALE"
+    },
+    {
+      "area": "authority",
+      "action": "status",
+      "expect_exit": 0,
+      "expect_contains": "AUTHORITY_STATUS=NONE"
+    }
+  ]
+}

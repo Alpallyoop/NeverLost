@@ -31,7 +31,7 @@ function EscapeJson([string]$s){
 }
 
 function To-CanonJson-Flat([hashtable]$h){
-  $keys = @($h.Keys | Sort-Object)
+  $keys = [string[]]@($h.Keys | ForEach-Object { [string]$_ }); [System.Array]::Sort($keys, [System.StringComparer]::Ordinal)
   $parts = New-Object System.Collections.Generic.List[string]
   foreach($k in $keys){
     $v = $h[$k]
@@ -74,6 +74,16 @@ if(-not (Test-Path -LiteralPath $SessionPath -PathType Leaf)){ Die "NO_ACTIVE_SE
 
 $sessionObj = ConvertFrom-Json (ReadUtf8 $SessionPath)
 if(-not $sessionObj.active){ Die "SESSION_NOT_ACTIVE" }
+
+# Fail closed on malformed, missing, mismatched or stale trust before any authority receipt is written.
+. (Join-Path (Join-Path $RepoRoot "scripts") "_lib_neverlost_v1.ps1")
+$ExpectedNsPath = Join-Path $TrustDir "expected_namespaces_principal0.txt"
+$expectedNs = @()
+if(Test-Path -LiteralPath $ExpectedNsPath -PathType Leaf){
+  $expectedNs = @((ReadUtf8 $ExpectedNsPath).Split("`n") | ForEach-Object { $_.Trim() } | Where-Object { $_.Length -gt 0 })
+}
+$trustEntries = NL-AssertTrustBundleV1 -RepoRoot $RepoRoot -ExpectedPrincipal ([string]$sessionObj.principal) -ExpectedNamespaces $expectedNs
+NL-AssertAllowedSignersCurrentV1 $RepoRoot $trustEntries
 
 $trustSha = Sha256HexFile (Join-Path $TrustDir "trust_bundle.json")
 $allowedSha = Sha256HexFile (Join-Path $TrustDir "allowed_signers")

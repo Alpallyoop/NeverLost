@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "neverlost.receipt.v1",
+  "title": "NeverLost receipt ledger line (proofs/receipts/neverlost.ndjson)",
+  "description": "Every line of the NeverLost receipt ledger is one JSON object (UTF-8 without BOM, LF, canonical key order). The ledger is append-only and carries several receipt families. A line is identified by 'schema' or, for older/run receipts, by 'event_type'. Authority lifecycle receipts are strict; other families are described by their identifying field and required core fields. See docs/contracts/NEVERLOST_CONTRACTS_v1.md.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/authorityStarted"
+    },
+    {
+      "$ref": "#/$defs/authorityConfirmed"
+    },
+    {
+      "$ref": "#/$defs/authorityEnded"
+    },
+    {
+      "$ref": "#/$defs/operatorRuntime"
+    },
+    {
+      "$ref": "#/$defs/legacyReceiptV1"
+    },
+    {
+      "$ref": "#/$defs/eventEnvelope"
+    },
+    {
+      "$ref": "#/$defs/runReceipt"
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+    },
+    "authorityStarted": {
+      "type": "object",
+      "required": [
+        "action",
+        "allowed_signers_sha256",
+        "authority_state",
+        "ok",
+        "principal",
+        "schema",
+        "session_id",
+        "time_utc",
+        "trust_bundle_sha256"
+      ],
+      "properties": {
+        "action": {
+          "const": "authority.started"
+        },
+        "allowed_signers_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "authority_state": {
+          "const": "active"
+        },
+        "ok": {
+          "const": true
+        },
+        "principal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema": {
+          "const": "neverlost.operator.authority.started.v1"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "time_utc": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+        },
+        "trust_bundle_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorityConfirmed": {
+      "type": "object",
+      "required": [
+        "action",
+        "allowed_signers_sha256",
+        "authority_state",
+        "ok",
+        "principal",
+        "schema",
+        "session_id",
+        "time_utc",
+        "trust_bundle_sha256"
+      ],
+      "properties": {
+        "action": {
+          "const": "authority.confirmed"
+        },
+        "allowed_signers_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "authority_state": {
+          "const": "active"
+        },
+        "ok": {
+          "const": true
+        },
+        "principal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema": {
+          "const": "neverlost.operator.authority.confirmed.v1"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "time_utc": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+        },
+        "trust_bundle_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorityEnded": {
+      "type": "object",
+      "required": [
+        "action",
+        "allowed_signers_sha256",
+        "authority_state",
+        "ok",
+        "principal",
+        "schema",
+        "session_id",
+        "time_utc",
+        "trust_bundle_sha256"
+      ],
+      "properties": {
+        "action": {
+          "const": "authority.ended"
+        },
+        "allowed_signers_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "authority_state": {
+          "const": "inactive"
+        },
+        "ok": {
+          "const": true
+        },
+        "principal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema": {
+          "const": "neverlost.operator.authority.ended.v1"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "time_utc": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+        },
+        "trust_bundle_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "operatorRuntime": {
+      "type": "object",
+      "required": [
+        "schema",
+        "action",
+        "ok",
+        "time_utc"
+      ],
+      "properties": {
+        "schema": {
+          "const": "neverlost.operator.runtime.v1"
+        },
+        "action": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "time_utc": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+        }
+      }
+    },
+    "legacyReceiptV1": {
+      "type": "object",
+      "required": [
+        "schema",
+        "action",
+        "ok",
+        "hashes"
+      ],
+      "properties": {
+        "schema": {
+          "const": "neverlost.receipt.v1"
+        },
+        "action": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "hashes": {
+          "type": "object"
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "time_utc": {
+          "type": "string"
+        }
+      }
+    },
+    "eventEnvelope": {
+      "description": "Signing, verification and export receipts written by scripts/_lib_neverlost_v1.ps1 NL-AppendReceipt.",
+      "type": "object",
+      "required": [
+        "ts",
+        "event_type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "type": "string"
+        },
+        "event_type": {
+          "type": "string",
+          "pattern": "^neverlost\\.[a-z0-9_.]+\\.v[0-9]+$"
+        },
+        "data": {
+          "type": "object"
+        }
+      }
+    },
+    "runReceipt": {
+      "description": "Proof-lane run receipts (tier0 full green).",
+      "type": "object",
+      "required": [
+        "event_type",
+        "ok",
+        "run_id"
+      ],
+      "not": {
+        "required": [
+          "schema"
+        ]
+      },
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "pattern": "^neverlost/[a-z0-9-]+$"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

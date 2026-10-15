@@ -41,7 +41,8 @@ if(-not (Get-Command NL-WriteAllowedSignersFromTrust -ErrorAction SilentlyContin
 
 Write-Host "LIB_COMPAT_OK" -ForegroundColor Green
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
 if(-not (Test-Path -LiteralPath $PSExe -PathType Leaf)){
   throw ("MISSING_POWERSHELL_EXE: " + $PSExe)
 }

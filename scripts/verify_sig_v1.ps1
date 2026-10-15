@@ -13,9 +13,13 @@ $TargetPath=(Resolve-Path -LiteralPath $TargetPath).Path
 $SigPath=(Resolve-Path -LiteralPath $SigPath).Path
 $ScriptsDir=Join-Path $RepoRoot "scripts"
 . (Join-Path $ScriptsDir "_lib_neverlost_v1.ps1")
-$ssh = (Get-Command ssh-keygen.exe -ErrorAction Stop).Source
+. (Join-Path $ScriptsDir "_lib_neverlost_host_v1.ps1")
+$ssh = NL-ResolveSshKeygen
 $asPath = Join-Path $RepoRoot "proofs\trust\allowed_signers"
 if (-not (Test-Path -LiteralPath $asPath -PathType Leaf)) { NL-Die ("MISSING_ALLOWED_SIGNERS: " + $asPath + " (run make_allowed_signers_v1.ps1)") }
+# The signer list must be exactly what the verified trust bundle derives (fail closed on stale trust).
+$trustEntries = NL-AssertTrustBundleV1 -RepoRoot $RepoRoot
+NL-AssertAllowedSignersCurrentV1 $RepoRoot $trustEntries
 $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $ssh
 $psi.Arguments = ("-Y verify -f `"" + $asPath + "`" -I `"" + $Principal + "`" -n `"" + $SigNamespace + "`" -s `"" + $SigPath + "`"")

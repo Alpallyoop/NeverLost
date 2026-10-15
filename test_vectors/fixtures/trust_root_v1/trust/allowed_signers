@@ -1,0 +1,1 @@
+single-tenant/watchtower_authority/authority/watchtower namespaces="nfl/ingest-receipt,packet/envelope,watchtower,watchtower/device-pledge" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ2J+ITMSs21xKvAsys60/J0kANBwjd8DXmjnKAHnRP0

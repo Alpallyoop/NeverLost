@@ -76,7 +76,7 @@ function Invoke-PSFileCapture {
     -ArgumentList $argLine `
     -Wait `
     -PassThru `
-    -WindowStyle Hidden `
+    @NLStartExtra `
     -RedirectStandardOutput $StdoutPath `
     -RedirectStandardError $StderrPath
 
@@ -120,7 +120,10 @@ if(-not (Test-Path -LiteralPath $RepoRoot -PathType Container)){
   Die ("MISSING_REPOROOT: " + $RepoRoot)
 }
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
+$NLStartExtra = @{}
+if(NL-IsWindowsHost){ $NLStartExtra["WindowStyle"] = "Hidden" }
 $RunId = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
 $RunRoot = Join-Path $RepoRoot ("proofs\receipts\full_green\" + $RunId)
 Ensure-Dir -Path $RunRoot

@@ -33,7 +33,25 @@ function Invoke-Icacls {
   }
 }
 
+function Test-WindowsHost(){
+  if($PSVersionTable.PSEdition -ne 'Core'){ return $true }
+  return [bool](Get-Variable -Name IsWindows -ValueOnly -ErrorAction SilentlyContinue)
+}
+
+# Non-Windows equivalent: owner read-only for the trust bundle, owner read/write for derived files,
+# no access for group/other.
+function Set-DeterministicUnixMode([string]$Path,[string]$UserGrant){
+  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){
+    Die ("ACL_TARGET_MISSING_FILE: " + $Path)
+  }
+  $mode = "600"
+  if($UserGrant -eq "(R)"){ $mode = "400" }
+  & chmod $mode $Path
+  if($LASTEXITCODE -ne 0){ throw ("CHMOD_FAILED: " + $Path) }
+}
+
 function Set-DeterministicFileAcl([string]$Path,[string]$UserGrant){
+  if(-not (Test-WindowsHost)){ Set-DeterministicUnixMode $Path $UserGrant; return }
   if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){
     Die ("ACL_TARGET_MISSING_FILE: " + $Path)
   }

@@ -20,8 +20,21 @@ function Ensure-Dir([string]$Path){
 }
 
 function JsonEscape([AllowNull()][string]$Value){
+  # RFC 8259 string escaping: backslash, quote and every control character (CR/LF in captured CLI
+  # output previously produced invalid NDJSON lines).
   if($null -eq $Value){ return "" }
-  return (($Value -replace "\\","\\") -replace '"','\"')
+  $sb = New-Object System.Text.StringBuilder
+  foreach($ch in $Value.ToCharArray()){
+    $code = [int][char]$ch
+    if($ch -eq '"'){ [void]$sb.Append('\"'); continue }
+    if($ch -eq '\'){ [void]$sb.Append('\\'); continue }
+    if($code -eq 10){ [void]$sb.Append('\n'); continue }
+    if($code -eq 13){ [void]$sb.Append('\r'); continue }
+    if($code -eq 9){ [void]$sb.Append('\t'); continue }
+    if($code -lt 32){ [void]$sb.Append('\u' + $code.ToString("x4")); continue }
+    [void]$sb.Append($ch)
+  }
+  return $sb.ToString()
 }
 
 function Append-Receipt {
@@ -58,7 +71,8 @@ if([string]::IsNullOrWhiteSpace($AdminActor)){
 
 $StatePath = Join-Path $RepoRoot "proofs\receipts\active_authority_session.json"
 $CoreCli = Join-Path $RepoRoot "scripts\neverlost_cli_v1.ps1"
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+. (Join-Path $PSScriptRoot "_lib_neverlost_host_v1.ps1")
+$PSExe = NL-ResolvePsHost
 
 if(-not (Test-Path -LiteralPath $CoreCli -PathType Leaf)){ Die ("ADMIN_PLUGIN_FAIL:MISSING_CORE_CLI:" + $CoreCli) }
 

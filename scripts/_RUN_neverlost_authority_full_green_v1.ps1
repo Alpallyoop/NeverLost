@@ -29,6 +29,11 @@ function Get-LedgerCount([string]$Path){
 }
 
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+. (Join-Path (Join-Path $RepoRoot "scripts") "_lib_neverlost_host_v1.ps1")
+# Run the lifecycle in an isolated sandbox copy so fixed-time test receipts never enter the live ledger.
+$LiveRoot = $RepoRoot
+$RepoRoot = NL-NewSandboxRepo -RepoRoot $LiveRoot -Label "authority_full_green"
+try {
 $ScriptsDir = Join-Path $RepoRoot "scripts"
 $ReceiptDir = Join-Path $RepoRoot "proofs\receipts"
 $LedgerPath = Join-Path $ReceiptDir "neverlost.ndjson"
@@ -42,7 +47,7 @@ Parse-GatePs1 $StartPath
 Parse-GatePs1 $ConfirmPath
 Parse-GatePs1 $EndPath
 
-$PSExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+$PSExe = NL-ResolvePsHost
 if(-not (Test-Path -LiteralPath $PSExe -PathType Leaf)){ Die ("MISSING_POWERSHELL_EXE: " + $PSExe) }
 
 $fixedStart = "2026-03-28T00:00:00Z"
@@ -83,6 +88,11 @@ foreach($line in $tail){
 
 $uniqueSessionIds = @($sessionIds | Select-Object -Unique)
 if($uniqueSessionIds.Count -ne 1){ Die "SESSION_ID_NOT_STABLE" }
+
+}
+finally {
+  NL-RemoveSandboxRepo $RepoRoot
+}
 
 Write-Host "NEVERLOST_AUTHORITY_TIER0_ALL_GREEN" -ForegroundColor Green
 Write-Host ("SESSION_ID=" + $uniqueSessionIds[0]) -ForegroundColor Green

@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
 import {
-  confirmAuthority,
   copyText,
-  endAuthority,
   getAuthorityStatus,
   getReceiptLedger,
-  startAuthority,
   getWorkbenchMode,
+  runNeverlostCliAction,
   setWorkbenchMode,
 } from "../lib/api"
 import type {
@@ -100,7 +98,7 @@ export default function Authority() {
   async function handleStart() {
     setBusy(true)
     try {
-      await startAuthority()
+      await runNeverlostCliAction("authority", "start", mode, "workbench")
       await refresh()
     } finally {
       setBusy(false)
@@ -110,7 +108,7 @@ export default function Authority() {
   async function handleConfirm() {
     setBusy(true)
     try {
-      await confirmAuthority()
+      await runNeverlostCliAction("authority", "confirm", mode, "workbench")
       await refresh()
     } finally {
       setBusy(false)
@@ -120,7 +118,22 @@ export default function Authority() {
   async function handleEnd() {
     setBusy(true)
     try {
-      await endAuthority()
+      await runNeverlostCliAction("authority", "end", mode, "workbench")
+      await refresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function switchMode(nextMode: "local" | "managed") {
+    if (status?.active) return
+
+    setBusy(true)
+    try {
+      const next = await setWorkbenchMode(nextMode)
+      setMode(next.mode === "managed" ? "managed" : "local")
+      localStorage.setItem("neverlost.settings.managed_mode", next.mode === "managed" ? "true" : "false")
+      window.dispatchEvent(new Event("neverlost-settings-changed"))
       await refresh()
     } finally {
       setBusy(false)

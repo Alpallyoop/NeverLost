@@ -4,6 +4,7 @@ import {
   getAllowedSignersInfo,
   getLatestWorkbenchRuns,
   getTrustBundleInfo,
+  getWorkbenchMode,
   openPath,
   runTier0,
 } from "../lib/api"
@@ -15,7 +16,6 @@ import type {
 } from "../lib/types"
 
 const KEY_LAUNCH_HIDDEN = "neverlost.settings.launch_hidden"
-const KEY_MANAGED_MODE = "neverlost.settings.managed_mode"
 const KEY_TRAY_REOPEN = "neverlost.settings.tray_reopen_on_click"
 const KEY_AUTO_START_AUTHORITY = "neverlost.settings.auto_start_authority"
 
@@ -60,15 +60,16 @@ export default function Settings() {
 
   useEffect(() => {
     async function load() {
-      const [startup, t, s, runs] = await Promise.all([
+      const [startup, t, s, runs, mode] = await Promise.all([
         isRunOnStartupEnabled(),
         getTrustBundleInfo(),
         getAllowedSignersInfo(),
         getLatestWorkbenchRuns(),
+        getWorkbenchMode(),
       ])
       setRunOnStartup(startup)
       setLaunchHidden(readBool(KEY_LAUNCH_HIDDEN, true))
-      setManagedMode(readBool(KEY_MANAGED_MODE, false))
+      setManagedMode(mode.mode === "managed")
       setTrayReopen(readBool(KEY_TRAY_REOPEN, true))
       setAutoStartAuthority(readBool(KEY_AUTO_START_AUTHORITY, false))
       setTrust(t)
@@ -101,13 +102,6 @@ export default function Settings() {
     setLaunchHidden(next)
     writeBool(KEY_LAUNCH_HIDDEN, next)
     setMessage(next ? "Launch hidden enabled. Next launch starts to tray." : "Launch hidden disabled. Next launch opens the window.")
-  }
-
-  function handleManagedModeToggle() {
-    const next = !managedMode
-    setManagedMode(next)
-    writeBool(KEY_MANAGED_MODE, next)
-    setMessage(next ? "Managed mode label enabled." : "Managed mode label disabled.")
   }
 
   function handleTrayReopenToggle() {
