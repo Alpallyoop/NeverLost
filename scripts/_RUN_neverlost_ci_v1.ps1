@@ -27,6 +27,7 @@ foreach($f in @(Get-ChildItem -LiteralPath $ScriptsDir -File -Filter *.ps1 | Sor
 }
 Write-Output "LANE parse_gate OK"
 
+
 $io = Join-Path (Join-Path $RepoRoot ".scratch") ("ci_" + [Guid]::NewGuid().ToString("N"))
 function Lane([string]$Name,[string]$Script,[string[]]$LaneArgs,[string]$Token){
   $r = NL-InvokePsFile -File (Join-Path $ScriptsDir $Script) -PsHost $PSExe -Arguments $LaneArgs -StdoutPath (Join-Path $io ($Name + ".out")) -StderrPath (Join-Path $io ($Name + ".err"))
@@ -39,6 +40,8 @@ function Lane([string]$Name,[string]$Script,[string[]]$LaneArgs,[string]$Token){
 }
 
 try {
+  Lane "ps51_alias_guard" "_selftest_ps51_compat_v1.ps1" @("-RepoRoot",$RepoRoot) "NEVERLOST_PS51_COMPAT_OK"
+
   $sb = NL-NewSandboxRepo -RepoRoot $RepoRoot -Label "ci_trust"
   try {
     Lane "trust_bundle_verify" "verify_trust_bundle_v1.ps1" @("-RepoRoot",$sb,"-UseExpectedFiles") "TRUST_BUNDLE_VERIFY_OK"
