@@ -38,7 +38,9 @@ contract index (`docs/contracts/NEVERLOST_CONTRACTS_v1.md`). Requested normaliza
 
 - `registry/integrations.json` records `neverlost -> watchtower` (`watchtower.heartbeat.v1`, `reverse-declared`).
   NeverLost reads no WatchTower artifact and has no upstream service (registry `upstream_services: []`).
-  Request: drop the edge, or record it as `watchtower -> neverlost` if that was the intent.
+  Request: drop the edge, or record it as `watchtower -> neverlost` if that was the intent. Since registry
+  2.16.0 (proposal 0013) this edge would also oblige NeverLost to emit `constellation.integration.receipt.v1`
+  for an exchange that never happens.
 
 
 - `scripts/_selftest_watchtower_device_binding_v1.ps1` tested a WatchTower bootstrap script that is not in

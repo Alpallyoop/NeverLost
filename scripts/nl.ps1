@@ -671,6 +671,7 @@ function Cmd-Constellation(){
   Say "  From Constellation: republish project.contract.json / ECOSYSTEM_INTEGRATION.md with all downstream users;"
   Say "    rename or re-point the contract names flagged above; drop the reverse 'neverlost -> watchtower' edge;"
   Say "    ask Contract Registry to stop writing into runtime/ (proposal 0003)."
+  Say "    Integration receipts (proposal 0013) are written by NeverLost's consumers, not by NeverLost."
   Say "  From you (owner): CRLF key files, a NeverLost root key and signed bundles, the LawVM seal signer,"
   Say "    the profiles feature, GOS role/algorithm requests, enabling CI (proposals 0004, 0005)."
   Say "  From other projects: LawVM picks up the exported signer list; WatchTower takes the archived device"

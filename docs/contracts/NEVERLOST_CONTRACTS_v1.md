@@ -156,6 +156,16 @@ scripts/neverlost_cli_v1.ps1 -RepoRoot <root> -Area authority -Action status|sta
 
 Ending authority does not require valid trust, so an operator can always leave the active state.
 
+## Integration receipts (Constellation proposal 0013)
+
+Registry 2.16.0 adds a shared invariant: every registered integration writes a
+`constellation.integration.receipt.v1` for each exchange, locally first, then NFL witnesses its hash. For
+every integration where NeverLost is the provider the registry marks the receipt "specified by consumer":
+the consuming service writes it, and for receipt-carrying contracts it embeds the `neverlost.receipt.v1`
+line it relied on. NeverLost itself owes no integration receipt, because it consumes nothing. The one
+exception in the registry, `neverlost -> watchtower` (`watchtower.heartbeat.v1`), does not exist in the
+code and is listed for removal in `docs/proposals/0003-constellation-registry-drift.md`.
+
 ## Host requirements
 
 - Windows PowerShell 5.1 (canonical lane on Windows) or PowerShell 7.3+ on Windows, Linux or macOS.
