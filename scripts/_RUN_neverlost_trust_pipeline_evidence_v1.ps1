@@ -117,19 +117,7 @@ if(-not (Test-Path -LiteralPath $PSExe -PathType Leaf)){
   Die ("MISSING_POWERSHELL_EXE: " + $PSExe)
 }
 
-$p = Start-Process `
-  -FilePath $PSExe `
-  -ArgumentList @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$RunnerPath,
-    "-RepoRoot",$RepoRoot
-  ) `
-  -Wait `
-  -PassThru `
-  -RedirectStandardOutput $stdoutPath `
-  -RedirectStandardError $stderrPath
+$p = NL-InvokePsFile -File $RunnerPath -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $stdoutPath -StderrPath $stderrPath
 
 $finishedUtc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 

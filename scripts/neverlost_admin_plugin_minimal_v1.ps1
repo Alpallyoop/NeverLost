@@ -122,7 +122,7 @@ if($Action -eq "confirm"){
   $stdoutPath = Join-Path $outDir "confirm_stdout.tmp.txt"
   $stderrPath = Join-Path $outDir "confirm_stderr.tmp.txt"
 
-  $p = Start-Process -FilePath $PSExe -ArgumentList @("-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",$CoreCli,"-RepoRoot",$RepoRoot,"-Area","authority","-Action","confirm") -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+  $p = NL-InvokePsFile -File $CoreCli -Arguments @("-RepoRoot",$RepoRoot,"-Area","authority","-Action","confirm") -PsHost $PSExe -StdoutPath $stdoutPath -StderrPath $stderrPath
 
   $cliStdout = ""
   $cliStderr = ""

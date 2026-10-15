@@ -79,26 +79,36 @@ function NL-InvokePsFile {
   foreach($a in @($Arguments)){ [void]$parts.Add((NL-QuoteArg ([string]$a))) }
   $argLine = (@($parts.ToArray()) -join ' ')
 
-  $sp = @{
-    FilePath = $PsHost
-    ArgumentList = $argLine
-    Wait = $true
-    PassThru = $true
-    RedirectStandardOutput = $StdoutPath
-    RedirectStandardError = $StderrPath
-  }
-  if(NL-IsWindowsHost){ $sp["WindowStyle"] = "Hidden" }
-  $proc = Start-Process @sp
-
-  $stdout = ""
-  if(Test-Path -LiteralPath $StdoutPath -PathType Leaf){ $stdout = [string](Get-Content -Raw -LiteralPath $StdoutPath -Encoding UTF8) }
-  $stderr = ""
-  if(Test-Path -LiteralPath $StderrPath -PathType Leaf){ $stderr = [string](Get-Content -Raw -LiteralPath $StderrPath -Encoding UTF8) }
-  if($null -eq $stdout){ $stdout = "" }
-  if($null -eq $stderr){ $stderr = "" }
+  # System.Diagnostics.Process with both streams drained concurrently and stdin closed at once.
+  # (Start-Process -RedirectStandardOutput can crash PowerShell 7 with "Cannot write to a closed
+  # TextWriter" when the child exits, and an inherited stdin can block a grandchild that reads it.)
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $PsHost
+  $psi.Arguments = $argLine
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.RedirectStandardInput = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $utf8 = New-Object System.Text.UTF8Encoding($false)
+  $psi.StandardOutputEncoding = $utf8
+  $psi.StandardErrorEncoding = $utf8
+  $proc = New-Object System.Diagnostics.Process
+  $proc.StartInfo = $psi
+  [void]$proc.Start()
+  $proc.StandardInput.Close()
+  $outTask = $proc.StandardOutput.ReadToEndAsync()
+  $errTask = $proc.StandardError.ReadToEndAsync()
+  $proc.WaitForExit()
+  $stdout = [string]$outTask.Result
+  $stderr = [string]$errTask.Result
+  $exit = [int]$proc.ExitCode
+  $proc.Dispose()
+  [System.IO.File]::WriteAllText($StdoutPath, $stdout, $utf8)
+  [System.IO.File]::WriteAllText($StderrPath, $stderr, $utf8)
 
   return [pscustomobject]@{
-    ExitCode = [int]$proc.ExitCode
+    ExitCode = $exit
     Stdout   = ($stdout -replace "`r`n","`n")
     Stderr   = ($stderr -replace "`r`n","`n")
   }

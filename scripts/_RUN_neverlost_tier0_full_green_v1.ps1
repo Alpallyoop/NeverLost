@@ -104,19 +104,7 @@ $evidenceStderr = Join-Path $tmpRoot ("neverlost_tier0_evidence_stderr_" + $runI
 $vectorStdout   = Join-Path $tmpRoot ("neverlost_tier0_vectors_stdout_" + $runId + ".txt")
 $vectorStderr   = Join-Path $tmpRoot ("neverlost_tier0_vectors_stderr_" + $runId + ".txt")
 
-$pEvidence = Start-Process `
-  -FilePath $PSExe `
-  -ArgumentList @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$EvidenceRunnerPath,
-    "-RepoRoot",$RepoRoot
-  ) `
-  -Wait `
-  -PassThru `
-  -RedirectStandardOutput $evidenceStdout `
-  -RedirectStandardError $evidenceStderr
+$pEvidence = NL-InvokePsFile -File $EvidenceRunnerPath -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $evidenceStdout -StderrPath $evidenceStderr
 
 if($pEvidence.ExitCode -ne 0){
   Write-Host ("EVIDENCE_STDOUT=" + $evidenceStdout) -ForegroundColor Yellow
@@ -129,19 +117,7 @@ if($evidenceText.IndexOf("NEVERLOST_TRUST_EVIDENCE_OK",[System.StringComparison]
   throw "NEVERLOST_TIER0_MISSING_EVIDENCE_TOKEN"
 }
 
-$pVector = Start-Process `
-  -FilePath $PSExe `
-  -ArgumentList @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$VectorRunnerPath,
-    "-RepoRoot",$RepoRoot
-  ) `
-  -Wait `
-  -PassThru `
-  -RedirectStandardOutput $vectorStdout `
-  -RedirectStandardError $vectorStderr
+$pVector = NL-InvokePsFile -File $VectorRunnerPath -Arguments @("-RepoRoot",$RepoRoot) -PsHost $PSExe -StdoutPath $vectorStdout -StderrPath $vectorStderr
 
 if($pVector.ExitCode -ne 0){
   Write-Host ("VECTOR_STDOUT=" + $vectorStdout) -ForegroundColor Yellow

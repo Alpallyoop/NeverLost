@@ -60,41 +60,9 @@ function Invoke-PSFileCapture {
     [Parameter(Mandatory=$true)][string]$StderrPath
   )
 
-  $argLineParts = @(
-    '-NoProfile'
-    '-NonInteractive'
-    '-ExecutionPolicy'
-    'Bypass'
-    '-File'
-    ('"' + $File + '"')
-  ) + $Args
-
-  $argLine = $argLineParts -join ' '
-
-  $proc = Start-Process `
-    -FilePath $PSExe `
-    -ArgumentList $argLine `
-    -Wait `
-    -PassThru `
-    @NLStartExtra `
-    -RedirectStandardOutput $StdoutPath `
-    -RedirectStandardError $StderrPath
-
-  $stdout = ""
-  if(Test-Path -LiteralPath $StdoutPath -PathType Leaf){
-    $stdout = Get-Content -Raw -LiteralPath $StdoutPath -Encoding UTF8
-  }
-
-  $stderr = ""
-  if(Test-Path -LiteralPath $StderrPath -PathType Leaf){
-    $stderr = Get-Content -Raw -LiteralPath $StderrPath -Encoding UTF8
-  }
-
-  return [pscustomobject]@{
-    ExitCode = [int]$proc.ExitCode
-    Stdout   = [string]$stdout
-    Stderr   = [string]$stderr
-  }
+  # Arguments may arrive pre-quoted ('"path"'); NL-InvokePsFile quotes them itself.
+  $plain = @($Args | ForEach-Object { ([string]$_).Trim('"') })
+  return NL-InvokePsFile -File $File -Arguments $plain -PsHost $PSExe -StdoutPath $StdoutPath -StderrPath $StderrPath
 }
 
 function Write-Sha256Sums {
