@@ -1,0 +1,12 @@
+schema=neverlost.release_package_smoke.v1
+run_id=
+20260510T233542Z
+release_exe=
+C:\dev\neverlost\src-tauri\target\release\neverlost_workbench.exe
+build=ok
+tauri_build=ok
+packaged_exe_launch=ok
+active_start_guard=ok
+nl_admin_status=ok
+nl_admin_confirm=ok
+startup_installed_validation=pending

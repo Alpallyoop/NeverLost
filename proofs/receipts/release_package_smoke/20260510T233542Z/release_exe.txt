@@ -1,0 +1,1 @@
+C:\dev\neverlost\src-tauri\target\release\neverlost_workbench.exe

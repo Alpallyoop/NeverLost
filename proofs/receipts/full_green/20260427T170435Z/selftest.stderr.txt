@@ -1,0 +1,7 @@
+SELFTEST_REQUIRES_INACTIVE_STATE
+At C:\dev\neverlost\scripts\_selftest_neverlost_cli_v1.ps1:10 char:3
++   throw $Message
++   ~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (SELFTEST_REQUIRES_INACTIVE_STATE:String) [], RuntimeException
+    + FullyQualifiedErrorId : SELFTEST_REQUIRES_INACTIVE_STATE
+ 

@@ -1,0 +1,7 @@
+Startup validation is not complete from tauri dev.
+Use the packaged exe / installed app only.
+Expected startup behavior:
+- no blank PowerShell/CMD window
+- workbench shell opens or launches hidden based on setting
+- no managed/local mode drift from Settings
+- admin confirm remains CLI/plugin-only

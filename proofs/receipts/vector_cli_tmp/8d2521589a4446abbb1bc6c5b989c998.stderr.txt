@@ -1,0 +1,8 @@
+Test-Path : Access is denied
+At C:\dev\neverlost\scripts\start_authority_v1.ps1:20 char:12
++   if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){ Die ("MISSI ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (C:\dev\neverlos..._principal0.txt:String) [Test-Path], UnauthorizedAc 
+   cessException
+    + FullyQualifiedErrorId : ItemExistsUnauthorizedAccessError,Microsoft.PowerShell.Commands.TestPathCommand
+ 

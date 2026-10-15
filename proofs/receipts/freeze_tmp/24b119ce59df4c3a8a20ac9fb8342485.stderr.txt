@@ -1,0 +1,7 @@
+FULL_GREEN_SELFTEST_FAILED
+At C:\dev\neverlost\scripts\_RUN_neverlost_tier0_all_green_v1.ps1:10 char:3
++   throw $Message
++   ~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (FULL_GREEN_SELFTEST_FAILED:String) [], RuntimeException
+    + FullyQualifiedErrorId : FULL_GREEN_SELFTEST_FAILED
+ 
