@@ -82,6 +82,9 @@ $SessionPath = Join-Path $ReceiptDir "active_authority_session.json"
 if(-not (Test-Path -LiteralPath $SessionPath -PathType Leaf)){ Die "NO_ACTIVE_SESSION" }
 
 $sessionObj = ConvertFrom-Json (ReadUtf8 $SessionPath)
+# PowerShell 7 parses ISO timestamps into DateTime; keep the canonical UTC string form.
+$startedProp = $sessionObj.PSObject.Properties["started_utc"]
+if($null -ne $startedProp -and $startedProp.Value -is [datetime]){ $startedProp.Value = $startedProp.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") }
 if(-not $sessionObj.active){ Die "SESSION_NOT_ACTIVE" }
 
 $trustSha = Sha256HexFile (Join-Path $TrustDir "trust_bundle.json")

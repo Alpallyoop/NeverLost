@@ -55,6 +55,7 @@ try {
   Lane "cli_vectors" "verify_neverlost_cli_vectors_v1.ps1" @("-RepoRoot",$RepoRoot) "NEVERLOST_CLI_VECTORS_OK"
   Lane "trust_signature_vectors" "_RUN_neverlost_vectors_v3.ps1" @("-RepoRoot",$RepoRoot) "NEVERLOST_VECTORS_FULL_GREEN"
   Lane "authority_lifecycle" "_RUN_neverlost_authority_full_green_v1.ps1" @("-RepoRoot",$RepoRoot) "NEVERLOST_AUTHORITY_TIER0_ALL_GREEN"
+  Lane "nl_cli_help" "nl.ps1" @("help") "Usage: nl <command>"
   Lane "admin_plugin_selftest" "_selftest_neverlost_admin_plugin_minimal_v1.ps1" @("-RepoRoot",$RepoRoot) "NEVERLOST_ADMIN_PLUGIN_SELFTEST_OK"
 }
 finally {

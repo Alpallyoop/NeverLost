@@ -1,0 +1,13 @@
+@echo off
+rem Run every proof lane
+rem Double-click to run. Uses Windows PowerShell 5.1; the window stays open so you can read the result.
+setlocal
+cd /d "%~dp0"
+title NeverLost - Run every proof lane
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\nl.ps1" test %*
+set "NL_RC=%ERRORLEVEL%"
+echo.
+if "%NL_RC%"=="0" (echo Finished OK.) else (echo Finished with problems - exit code %NL_RC%. Read the [FAIL] lines above.)
+echo.
+pause
+exit /b %NL_RC%

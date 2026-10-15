@@ -1,3 +1,7 @@
 # Hashed fixtures must keep their exact bytes on every platform (pubkey_sha256 covers file bytes).
 test_vectors/** -text
 schemas/** text eol=lf
+
+# Windows launchers must keep CRLF line endings
+*.cmd text eol=crlf
+*.bat text eol=crlf

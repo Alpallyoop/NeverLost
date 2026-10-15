@@ -25,9 +25,9 @@ $trustEntries = NL-AssertTrustBundleV1 -RepoRoot $RepoRoot
 $grant = @($trustEntries | Where-Object { [string]$_.principal -ceq $Principal -and [string]$_.key_id -ceq $KeyId })
 if($grant.Count -lt 1){ NL-Die ("SIGN_DENIED_UNTRUSTED_SIGNER principal=" + $Principal + " key_id=" + $KeyId) }
 if(@($grant[0].namespaces) -cnotcontains $SigNamespace){ NL-Die ("SIGN_DENIED_NAMESPACE principal=" + $Principal + " namespace=" + $SigNamespace) }
-$derived = & $ssh -y -f $PrivKeyPath 2>&1
-if($LASTEXITCODE -ne 0){ NL-Die ("SIGN_DENIED_KEY_UNREADABLE exit=" + $LASTEXITCODE) }
-if((NL-PubkeyCore ((@($derived) | ForEach-Object { [string]$_ }) -join "`n")) -cne [string]$grant[0].pubkey){ NL-Die ("SIGN_DENIED_KEY_MISMATCH key_id=" + $KeyId) }
+$derivedRun = NL-InvokeNative -Exe $ssh -Arguments @("-y","-f",$PrivKeyPath)
+if($derivedRun.Code -ne 0){ NL-Die ("SIGN_DENIED_KEY_UNREADABLE exit=" + $derivedRun.Code) }
+if((NL-PubkeyCore $derivedRun.Output) -cne [string]$grant[0].pubkey){ NL-Die ("SIGN_DENIED_KEY_MISMATCH key_id=" + $KeyId) }
 
 $defaultSig = $TargetPath + ".sig"
 if([string]::IsNullOrWhiteSpace($OutSigPath)){ $OutSigPath = $defaultSig }
@@ -39,8 +39,9 @@ if($outDir -and -not (Test-Path -LiteralPath $outDir -PathType Container)){ New-
 
 $sshArgs = @("-Y","sign","-f",$PrivKeyPath,"-n",$SigNamespace,$TargetPath)
 Write-Host ("SIGN_CMD: ssh-keygen -Y sign -n " + $SigNamespace + " (principal=" + $Principal + " key_id=" + $KeyId + ")") -ForegroundColor DarkGray
-$out = $null | & $ssh @sshArgs 2>&1
-$code = [int]$LASTEXITCODE
+$signRun = NL-InvokeNative -Exe $ssh -Arguments $sshArgs
+$out = $signRun.Output
+$code = $signRun.Code
 if($code -ne 0 -or -not (Test-Path -LiteralPath $defaultSig -PathType Leaf)){
   NL-AppendReceipt $RepoRoot "neverlost.sig.sign.fail.v1" @{ target=$TargetPath; sig=$OutSigPath; namespace=$SigNamespace; principal=$Principal; key_id=$KeyId; exit_code=$code; output=((@($out) | ForEach-Object { [string]$_ }) -join "`n"); target_sha256=(NL-Sha256HexFile $TargetPath) } | Out-Null
   NL-Die ("SIGN_FAILED exit=" + $code + " output=" + ((@($out) | ForEach-Object { [string]$_ }) -join "`n"))

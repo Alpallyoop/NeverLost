@@ -83,6 +83,11 @@ switch($Action){
     }
 
     $obj = $raw | ConvertFrom-Json
+    # PowerShell 7 turns ISO timestamps into DateTime; print them back in the canonical UTC form.
+    foreach($tp in @("started_utc","ended_utc")){
+      $pp = $obj.PSObject.Properties[$tp]
+      if($null -ne $pp -and $pp.Value -is [datetime]){ $pp.Value = $pp.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") }
+    }
 
     $active = $false
     if($obj.PSObject.Properties.Name -contains "active"){

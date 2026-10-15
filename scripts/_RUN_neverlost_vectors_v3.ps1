@@ -90,10 +90,8 @@ try {
 
   # Ephemeral signer created for this run only (private key never leaves the sandbox).
   $keyBase = Join-Path (Join-Path (Join-Path $sb "proofs") "keys") "vector_signer_ed25519"
-  # Windows PowerShell 5.1 drops empty native arguments; it needs a literal "" to pass an empty passphrase.
-  $emptyPass = ""
-  if($PSVersionTable.PSEdition -ne 'Core'){ $emptyPass = '""' }
-  $kg = $null | & $ssh -q -t ed25519 -N $emptyPass -C "neverlost-vector" -f $keyBase 2>&1
+  $kgRun = NL-InvokeNative -Exe $ssh -Arguments @("-q","-t","ed25519","-N","","-C","neverlost-vector","-f",$keyBase) -NullStdin
+  $kg = $kgRun.Output
   if(-not (Test-Path -LiteralPath $keyBase -PathType Leaf)){ Die ("VECTOR_KEYGEN_FAILED: " + ((@($kg) | ForEach-Object { [string]$_ }) -join " ")) }
   NL-ProtectPrivateKey $keyBase
   $pubPath = $keyBase + ".pub"

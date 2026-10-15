@@ -54,6 +54,10 @@ try {
   if($statusAfter.ExitCode -ne 0){ Die "SELFTEST_STATUS_AFTER_FAILED" }
   if($statusAfter.Stdout -notmatch 'AUTHORITY_STATUS=INACTIVE'){ Die "SELFTEST_STATUS_AFTER_NOT_INACTIVE" }
 
+  # Session file stays canonical after end (UTC ISO timestamps, never host-formatted dates).
+  $sessText = [System.IO.File]::ReadAllText((Join-Path (Join-Path (Join-Path $sb "proofs") "receipts") "active_authority_session.json"))
+  if($sessText -notmatch '"started_utc":"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"' -or $sessText -notmatch '"ended_utc":"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"'){ Die ("SELFTEST_SESSION_NOT_CANONICAL: " + $sessText.Trim()) }
+
   # Receipt checks: exactly started -> confirmed -> ended for one session id, each a canonical line.
   $ledger = Join-Path (Join-Path (Join-Path $sb "proofs") "receipts") "neverlost.ndjson"
   if(-not (Test-Path -LiteralPath $ledger -PathType Leaf)){ Die "SELFTEST_LEDGER_MISSING" }

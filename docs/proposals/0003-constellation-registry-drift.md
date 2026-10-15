@@ -34,9 +34,14 @@ contract index (`docs/contracts/NEVERLOST_CONTRACTS_v1.md`). Requested normaliza
 | constellation, lawvm | `trust_bundle.v1` | rename to `neverlost.trust_bundle.v1` |
 | covenant-gate, live-state-surgeon, proteusops, shutterwall | `None` (declared, unverified) | record the contracts they use from the index once each consumer confirms |
 
-## 3. Dependency-direction note
+## 3. Dependency-direction notes
 
-`scripts/_selftest_watchtower_device_binding_v1.ps1` tested a WatchTower bootstrap script that is not in
+- `registry/integrations.json` records `neverlost -> watchtower` (`watchtower.heartbeat.v1`, `reverse-declared`).
+  NeverLost reads no WatchTower artifact and has no upstream service (registry `upstream_services: []`).
+  Request: drop the edge, or record it as `watchtower -> neverlost` if that was the intent.
+
+
+- `scripts/_selftest_watchtower_device_binding_v1.ps1` tested a WatchTower bootstrap script that is not in
 this repository. Because NeverLost is upstream of WatchTower, the test was archived
 (`scripts/_archive/`) and belongs in the WatchTower repository.
 

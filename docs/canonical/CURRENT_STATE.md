@@ -13,6 +13,8 @@ NeverLost currently contains:
 - `allowed_signers` derivation and per-consumer export (`scripts/export_allowed_signers_v1.ps1`)
 - a receipt-ledger verifier (`scripts/verify_receipt_ledger_v1.ps1`)
 - published integration contracts (`docs/contracts/NEVERLOST_CONTRACTS_v1.md`) and schemas (`schemas/`)
+- one command line, `nl` (`scripts/nl.ps1`, `nl.cmd`), and Windows double-click launchers (`*.cmd` in the
+  repository root) for status, update, push, identity checks, tests and ecosystem needs
 - a Tauri desktop workbench for local operation and evidence display
 - trust-bundle and allowed-signers artifacts under `proofs/trust` (local, untracked)
 - receipt-ledger artifacts under `proofs/receipts` (local, untracked)

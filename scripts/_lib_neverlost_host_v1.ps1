@@ -198,3 +198,26 @@ function NL-ProtectPrivateKey([string]$Path){
     if($LASTEXITCODE -ne 0){ throw ("CHMOD_FAILED: " + $Path) }
   }
 }
+
+# Runs a native program and captures stdout+stderr as text. Windows PowerShell 5.1 turns native stderr
+# into terminating errors under ErrorActionPreference=Stop when 2>&1 is used (ssh-keygen -Y sign writes
+# progress to stderr), so the preference is relaxed for the call only. Empty-string arguments are passed
+# as "" on 5.1, which otherwise drops them.
+function NL-InvokeNative {
+  param(
+    [Parameter(Mandatory=$true)][string]$Exe,
+    [string[]]$Arguments = @(),
+    [switch]$NullStdin
+  )
+  $argv = @()
+  foreach($a in @($Arguments)){
+    if($PSVersionTable.PSEdition -ne 'Core' -and ([string]$a).Length -eq 0){ $argv += '""' } else { $argv += [string]$a }
+  }
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    if($NullStdin){ $out = $null | & $Exe @argv 2>&1 } else { $out = & $Exe @argv 2>&1 }
+    $code = [int]$LASTEXITCODE
+  } finally { $ErrorActionPreference = $prev }
+  return [pscustomobject]@{ Code = $code; Output = ((@($out) | ForEach-Object { [string]$_ }) -join "`n") }
+}

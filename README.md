@@ -17,7 +17,27 @@ Canonical documents: `docs/canonical/`. Contracts for consuming services:
 - writes an append-only receipt ledger (`proofs/receipts/neverlost.ndjson`) and verifies it
 - a Tauri desktop workbench that runs the approved runners and shows evidence (it is not the trust engine)
 
-## Quick start
+## Command line and double-click launchers
+
+`nl` is the single command line for everything below (`nl help`, `nl help <command>`).
+From a terminal in this folder run `nl <command>` (Windows: `nl.cmd`; elsewhere `pwsh scripts/nl.ps1`).
+
+| Double-click (Windows) | Runs | What it does |
+|---|---|---|
+| `NeverLost_Menu.cmd` | menu | every action below from one window |
+| `Status.cmd` | `nl status` | authority session, trust, signer list, ledger, git sync |
+| `Update.cmd` | `nl update` | fast-forward from GitHub, verify trust (rebuild a stale signer list), verify ledger, run all tests |
+| `Push.cmd` | `nl push` | asks for a commit message, refuses secrets, runs all tests, fast-forwards, pushes (never force) |
+| `Check_Identity.cmd` | `nl identity --online` | git user and origin owner, GitHub access, trust bundle, keys on this machine, session principal |
+| `Run_Tests.cmd` | `nl test` | every portable proof lane |
+| `Constellation_Needs.cmd` | `nl constellation` | what NeverLost needs from Constellation and other projects |
+| `Doctor.cmd` | `nl doctor` | tools and ecosystem files |
+
+Other commands: `nl start | confirm | end`, `nl trust verify | show`, `nl signers make | check | export`,
+`nl sign`, `nl verify`, `nl ledger verify [--strict]`, `nl test tier0 | freeze | workbench`,
+`nl git status | pull | push`, `nl version`.
+
+## Underlying scripts
 
 ```powershell
 .\scripts\neverlost_cli_v1.ps1 -RepoRoot . -Area authority -Action status
