@@ -1,0 +1,5 @@
+neverlost.sigproof.v1b
+principal=single-tenant/watchtower_authority/authority/watchtower
+key_id=watchtower-authority-ed25519
+namespace=watchtower
+utc=2026-02-05T20:01:16.1779158Z

@@ -1,0 +1,5 @@
+AUTHORITY_STATUS=INACTIVE
+PRINCIPAL=single-tenant/watchtower_authority/authority/watchtower
+SESSION_ID=2d6fc4815d00fec78fe33f89838fe0ee1b79dbeff7c32dabcc5efb6e8390c8ee
+STARTED_UTC=2026-04-30T01:15:42Z
+ENDED_UTC=2026-04-30T01:15:44Z

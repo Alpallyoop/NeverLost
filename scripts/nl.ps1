@@ -64,19 +64,19 @@ function Flag([string]$n){ return $script:Flags.ContainsKey($n) }
 # running the canonical scripts (live output, exit code returned)
 # ---------------------------------------------------------------------------------------------------
 $script:PSExe = $null
-function Ps(){ if($null -eq $script:PSExe){ $script:PSExe = NL-ResolvePsHost }; return $script:PSExe }
+function Get-NLPsHost(){ if($null -eq $script:PSExe){ $script:PSExe = NL-ResolvePsHost }; return $script:PSExe }
 
 function Run-Script([string]$Name,[string[]]$ScriptArgs){
   $path = Join-Path $ScriptsDir $Name
   if(-not (Test-Path -LiteralPath $path -PathType Leaf)){ throw ("SCRIPT_MISSING: " + $path) }
-  & (Ps) -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $path @ScriptArgs | Out-Host
+  & (Get-NLPsHost) -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $path @ScriptArgs | Out-Host
   return [int]$LASTEXITCODE
 }
 
 function Capture-Script([string]$Name,[string[]]$ScriptArgs){
   $io = Join-Path (Join-Path $RepoRoot ".scratch") "cli"
   $id = [Guid]::NewGuid().ToString("N")
-  $r = NL-InvokePsFile -File (Join-Path $ScriptsDir $Name) -PsHost (Ps) -Arguments $ScriptArgs -StdoutPath (Join-Path $io ($id + ".out")) -StderrPath (Join-Path $io ($id + ".err"))
+  $r = NL-InvokePsFile -File (Join-Path $ScriptsDir $Name) -PsHost (Get-NLPsHost) -Arguments $ScriptArgs -StdoutPath (Join-Path $io ($id + ".out")) -StderrPath (Join-Path $io ($id + ".err"))
   Remove-Item -LiteralPath (Join-Path $io ($id + ".out")),(Join-Path $io ($id + ".err")) -Force -ErrorAction SilentlyContinue
   return $r
 }
@@ -577,7 +577,7 @@ function Cmd-Identity(){
 
 function Cmd-Doctor(){
   Head "Tools"
-  try { $ps = Ps; Ok ("PowerShell host: " + $ps) } catch { Bad $_.Exception.Message }
+  try { $ps = Get-NLPsHost; Ok ("PowerShell host: " + $ps) } catch { Bad $_.Exception.Message }
   Info ("this CLI runs on PowerShell " + $PSVersionTable.PSVersion.ToString() + " (" + $PSVersionTable.PSEdition + ")")
   try {
     $ssh = NL-ResolveSshKeygen
@@ -808,7 +808,7 @@ function Cmd-Push(){
 function Cmd-Version(){
   Say ("nl " + $NL_CLI_VERSION)
   Say ("PowerShell " + $PSVersionTable.PSVersion.ToString() + " " + $PSVersionTable.PSEdition)
-  try { Say ("host for scripts: " + (Ps)) } catch { Say "host for scripts: not found" }
+  try { Say ("host for scripts: " + (Get-NLPsHost)) } catch { Say "host for scripts: not found" }
   try { Say ("ssh-keygen: " + (NL-ResolveSshKeygen)) } catch { Say "ssh-keygen: not found" }
   if(Have "git"){ $h = Git @("rev-parse","--short","HEAD"); if($h.Code -eq 0){ Say ("commit: " + $h.Text) } }
   exit 0

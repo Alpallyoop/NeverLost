@@ -1,0 +1,7 @@
+UNKNOWN_ACTION: bogus
+At C:\dev\neverlost\scripts\neverlost_cli_v1.ps1:39 char:27
++ function Die([string]$m){ throw $m }
++                           ~~~~~~~~
+    + CategoryInfo          : OperationStopped: (UNKNOWN_ACTION: bogus:String) [], RuntimeException
+    + FullyQualifiedErrorId : UNKNOWN_ACTION: bogus
+ 

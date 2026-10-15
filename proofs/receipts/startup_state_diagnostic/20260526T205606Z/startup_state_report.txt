@@ -1,0 +1,159 @@
+schema=neverlost.startup_state_diagnostic.v1
+run_id=20260526T205606Z
+repo_root=C:\dev\neverlost
+release_exe_exists=True
+
+FILE=C:\dev\neverlost\proofs\receipts\workbench_mode.json
+exists=True
+{
+  "mode": "managed",
+  "schema": "neverlost.workbench.mode.v1",
+  "time_utc": "2026-04-26T05:55:37Z"
+}
+
+FILE=C:\dev\neverlost\proofs\receipts\active_authority_session.json
+exists=True
+{"active":true,"principal":"single-tenant/watchtower_authority/authority/watchtower","session_id":"262fe533d63439718cac0c1f48ab2177ea7f2d9ce4314bd59c07378865409047","started_utc":"2026-05-21T02:33:46Z"}
+
+
+FILE=C:\dev\neverlost\proofs\receipts\authority_preferences.json
+exists=True
+{"auto_start_authority_on_launch":true}
+
+
+INSTALLED_EXE_CANDIDATES
+C:\Users\alecm\AppData\Local\Programs\NeverLost Workbench\NeverLost Workbench.exe exists=False
+C:\Users\alecm\AppData\Local\NeverLost Workbench\NeverLost Workbench.exe exists=False
+C:\Program Files\NeverLost Workbench\NeverLost Workbench.exe exists=False
+C:\Program Files (x86)\NeverLost Workbench\NeverLost Workbench.exe exists=False
+C:\Users\alecm\AppData\Local\Programs\NeverLost Workbench\neverlost_workbench.exe exists=False
+C:\Program Files\NeverLost Workbench\neverlost_workbench.exe exists=True
+
+HKCU_RUN
+
+
+OneDrive                                                 : "C:\Program 
+                                                           Files\Microsoft OneDri
+                                                           ve\OneDrive.exe" 
+                                                           /background
+RiotClient                                               : C:\Riot Games\Riot Cli
+                                                           ent\RiotClientServices
+                                                           .exe --launch-backgrou
+                                                           nd-mode
+Discord                                                  : "C:\Users\alecm\AppDat
+                                                           a\Local\Discord\Update
+                                                           .exe" --processStart 
+                                                           Discord.exe
+Steam                                                    : "C:\Program Files (x86
+                                                           )\Steam\steam.exe" 
+                                                           -silent
+NZXT.CAM                                                 : C:\Program Files\NZXT 
+                                                           CAM\NZXT CAM.exe 
+                                                           --startup
+LGHUB                                                    : "C:\Program Files\LGHU
+                                                           B\system_tray\lghub_sy
+                                                           stem_tray.exe" 
+                                                           --minimized
+ASRock A-Tuning                                          : 
+ASRockRuefi                                              : 
+Stream Deck                                              : "C:\Program Files\Elga
+                                                           to\StreamDeck\StreamDe
+                                                           ck.exe" --runinbk
+Volume Controller SD plugin                              : C:\Program 
+                                                           Files\Elgato\Volume Co
+                                                           ntroller\ElgatoAudioCo
+                                                           ntrolServerWatcher.exe
+Camera Hub                                               : "C:\Program Files\Elga
+                                                           to\CameraHub\Camera 
+                                                           Hub.exe" /b
+EpicGamesLauncher                                        : "C:\Program Files 
+                                                           (x86)\Epic Games\Launc
+                                                           her\Portal\Binaries\Wi
+                                                           n64\EpicGamesLauncher.
+                                                           exe" -silent 
+                                                           -launchcontext=boot
+Overwolf                                                 : C:\Program Files (x86)
+                                                           \Overwolf\OverwolfLaun
+                                                           cher.exe 
+                                                           -overwolfsilent
+CanvaAutoLaunchAvailabilityCheckAgent                    : "C:\Users\alecm\AppDat
+                                                           a\Local\Programs\Canva
+                                                           \Canva.exe" --start-av
+                                                           ailability-check-agent
+Figma Agent                                              : "C:\Users\alecm\AppDat
+                                                           a\Local\FigmaAgent\fig
+                                                           ma_agent.exe"
+Medal                                                    : "C:\Users\alecm\AppDat
+                                                           a\Local\Medal\update.e
+                                                           xe" --processStart 
+                                                           "Medal.exe"
+Docker Desktop                                           : C:\Program Files\Docke
+                                                           r\Docker\Docker 
+                                                           Desktop.exe
+GoogleDriveFS                                            : C:\Program 
+                                                           Files\Google\Drive 
+                                                           File Stream\125.0.0.0\
+                                                           GoogleDriveFS.exe 
+                                                           --startup_mode
+Visual Studio Code Tunnel                                : "C:\Users\alecm\AppDat
+                                                           a\Local\Programs\Micro
+                                                           soft VS Code\bin\code-
+                                                           tunnel.exe" --verbose 
+                                                           --cli-data-dir C:\User
+                                                           s\alecm\.vscode\cli 
+                                                           tunnel service 
+                                                           internal-run 
+                                                           --log-to-file C:\Users
+                                                           \alecm\.vscode\cli\tun
+                                                           nel-service.log
+NeverLost Workbench                                      : C:\dev\neverlost\src-t
+                                                           auri\target\release\ne
+                                                           verlost_workbench.exe 
+MicrosoftEdgeAutoLaunch_78CB6217EACBE2322BF24212F44DD10D : "C:\Program Files (x86
+                                                           )\Microsoft\Edge\Appli
+                                                           cation\msedge.exe" 
+                                                           --no-startup-window 
+                                                           --win-session-start
+PSPath                                                   : Microsoft.PowerShell.C
+                                                           ore\Registry::HKEY_CUR
+                                                           RENT_USER\Software\Mic
+                                                           rosoft\Windows\Current
+                                                           Version\Run
+PSParentPath                                             : Microsoft.PowerShell.C
+                                                           ore\Registry::HKEY_CUR
+                                                           RENT_USER\Software\Mic
+                                                           rosoft\Windows\Current
+                                                           Version
+PSChildName                                              : Run
+PSDrive                                                  : HKCU
+PSProvider                                               : Microsoft.PowerShell.C
+                                                           ore\Registry
+
+
+
+
+
+RUNNING_PROCESSES
+
+
+ProcessName      : neverlost_workbench
+Id               : 21292
+MainWindowTitle  : 
+MainWindowHandle : 132206
+StartTime        : 5/26/2026 9:11:41 AM
+Path             : C:\dev\neverlost\src-tauri\target\release\neverlost_workbench.
+                   exe
+
+
+
+
+
+APP_STORAGE_CANDIDATES
+C:\Users\alecm\AppData\Roaming\NeverLost Workbench exists=False
+C:\Users\alecm\AppData\Roaming\neverlost_workbench exists=False
+C:\Users\alecm\AppData\Roaming\com.neverlost.workbench exists=False
+C:\Users\alecm\AppData\Local\NeverLost Workbench exists=False
+C:\Users\alecm\AppData\Local\neverlost_workbench exists=False
+C:\Users\alecm\AppData\Local\com.neverlost.workbench exists=True
+C:\Users\alecm\AppData\Local\NeverLost exists=False
+C:\Users\alecm\AppData\Roaming\NeverLost exists=False

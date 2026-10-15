@@ -1,0 +1,6 @@
+NEVERLOST_TIER0_FULL_GREEN
+LEDGER=C:\dev\neverlost\proofs\receipts\neverlost.ndjson
+EVIDENCE_STDOUT=C:\dev\neverlost\proofs\receipts\_tmp_neverlost_tier0\neverlost_tier0_evidence_stdout_20260328T021710Z.txt
+EVIDENCE_STDERR=C:\dev\neverlost\proofs\receipts\_tmp_neverlost_tier0\neverlost_tier0_evidence_stderr_20260328T021710Z.txt
+VECTOR_STDOUT=C:\dev\neverlost\proofs\receipts\_tmp_neverlost_tier0\neverlost_tier0_vectors_stdout_20260328T021710Z.txt
+VECTOR_STDERR=C:\dev\neverlost\proofs\receipts\_tmp_neverlost_tier0\neverlost_tier0_vectors_stderr_20260328T021710Z.txt

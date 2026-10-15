@@ -1,0 +1,109 @@
+
+
+OneDrive                                                 : "C:\Program 
+                                                           Files\Microsoft OneD
+                                                           rive\OneDrive.exe" 
+                                                           /background
+RiotClient                                               : C:\Riot Games\Riot C
+                                                           lient\RiotClientServ
+                                                           ices.exe --launch-ba
+                                                           ckground-mode
+Discord                                                  : "C:\Users\alecm\AppD
+                                                           ata\Local\Discord\Up
+                                                           date.exe" 
+                                                           --processStart 
+                                                           Discord.exe
+Steam                                                    : "C:\Program Files (x
+                                                           86)\Steam\steam.exe"
+                                                            -silent
+NZXT.CAM                                                 : C:\Program 
+                                                           Files\NZXT CAM\NZXT 
+                                                           CAM.exe --startup
+LGHUB                                                    : "C:\Program Files\LG
+                                                           HUB\system_tray\lghu
+                                                           b_system_tray.exe" 
+                                                           --minimized
+ASRock A-Tuning                                          : 
+ASRockRuefi                                              : 
+Stream Deck                                              : "C:\Program Files\El
+                                                           gato\StreamDeck\Stre
+                                                           amDeck.exe" 
+                                                           --runinbk
+Volume Controller SD plugin                              : C:\Program 
+                                                           Files\Elgato\Volume 
+                                                           Controller\ElgatoAud
+                                                           ioControlServerWatch
+                                                           er.exe
+Camera Hub                                               : "C:\Program Files\El
+                                                           gato\CameraHub\Camer
+                                                           a Hub.exe" /b
+EpicGamesLauncher                                        : "C:\Program Files 
+                                                           (x86)\Epic Games\Lau
+                                                           ncher\Portal\Binarie
+                                                           s\Win64\EpicGamesLau
+                                                           ncher.exe" -silent 
+                                                           -launchcontext=boot
+Overwolf                                                 : C:\Program Files (x8
+                                                           6)\Overwolf\Overwolf
+                                                           Launcher.exe 
+                                                           -overwolfsilent
+CanvaAutoLaunchAvailabilityCheckAgent                    : "C:\Users\alecm\AppD
+                                                           ata\Local\Programs\C
+                                                           anva\Canva.exe" --st
+                                                           art-availability-che
+                                                           ck-agent
+Figma Agent                                              : "C:\Users\alecm\AppD
+                                                           ata\Local\FigmaAgent
+                                                           \figma_agent.exe"
+Medal                                                    : "C:\Users\alecm\AppD
+                                                           ata\Local\Medal\upda
+                                                           te.exe" 
+                                                           --processStart 
+                                                           "Medal.exe"
+Docker Desktop                                           : C:\Program Files\Doc
+                                                           ker\Docker\Docker 
+                                                           Desktop.exe
+GoogleDriveFS                                            : C:\Program 
+                                                           Files\Google\Drive 
+                                                           File Stream\124.0.3.
+                                                           0\GoogleDriveFS.exe 
+                                                           --startup_mode
+Visual Studio Code Tunnel                                : "C:\Users\alecm\AppD
+                                                           ata\Local\Programs\M
+                                                           icrosoft VS Code\bin
+                                                           \code-tunnel.exe" 
+                                                           --verbose 
+                                                           --cli-data-dir C:\Us
+                                                           ers\alecm\.vscode\cl
+                                                           i tunnel service 
+                                                           internal-run 
+                                                           --log-to-file C:\Use
+                                                           rs\alecm\.vscode\cli
+                                                           \tunnel-service.log
+MicrosoftEdgeAutoLaunch_78CB6217EACBE2322BF24212F44DD10D : "C:\Program Files (x
+                                                           86)\Microsoft\Edge\A
+                                                           pplication\msedge.ex
+                                                           e" 
+                                                           --no-startup-window 
+                                                           --win-session-start
+NeverLost Workbench                                      : C:\dev\neverlost\src
+                                                           -tauri\target\releas
+                                                           e\neverlost_workbenc
+                                                           h.exe 
+PSPath                                                   : Microsoft.PowerShell
+                                                           .Core\Registry::HKEY
+                                                           _CURRENT_USER\Softwa
+                                                           re\Microsoft\Windows
+                                                           \CurrentVersion\Run
+PSParentPath                                             : Microsoft.PowerShell
+                                                           .Core\Registry::HKEY
+                                                           _CURRENT_USER\Softwa
+                                                           re\Microsoft\Windows
+                                                           \CurrentVersion
+PSChildName                                              : Run
+PSDrive                                                  : HKCU
+PSProvider                                               : Microsoft.PowerShell
+                                                           .Core\Registry
+
+
+

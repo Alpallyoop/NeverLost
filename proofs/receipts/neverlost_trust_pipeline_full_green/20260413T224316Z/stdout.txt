@@ -1,0 +1,5 @@
+RUNNER_START
+LIB_COMPAT_OK
+TRUST_ACL_OK: C:\dev\neverlost\proofs\trust
+SELFTEST_OK: principal=single-tenant/watchtower_authority/authority/watchtower namespaces=4 allowed_signers=C:\dev\neverlost\proofs\trust\allowed_signers
+NEVERLOST_TRUST_PIPELINE_FULL_GREEN

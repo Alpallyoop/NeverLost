@@ -1,0 +1,1 @@
+C:\dev\neverlost\src-tauri\target\release\bundle\msi\NeverLost Workbench_1.0.0_x64_en-US.msi

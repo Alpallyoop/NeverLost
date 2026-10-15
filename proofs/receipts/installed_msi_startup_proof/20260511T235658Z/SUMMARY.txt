@@ -1,0 +1,12 @@
+schema=neverlost.installed_msi_startup_proof.v1
+run_id=
+20260511T235658Z
+msi=
+C:\dev\neverlost\src-tauri\target\release\bundle\msi\NeverLost Workbench_1.0.0_x64_en-US.msi
+installed_exe=
+C:\Program Files\NeverLost Workbench\neverlost_workbench.exe
+installed_launch=ok
+active_start_guard=ok
+nl_admin_status=ok
+nl_admin_confirm=ok
+startup_registry_report=hkcu_run_after_install.txt

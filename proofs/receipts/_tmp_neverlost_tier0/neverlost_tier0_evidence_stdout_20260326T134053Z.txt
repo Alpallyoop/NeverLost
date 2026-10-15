@@ -1,0 +1,4 @@
+NEVERLOST_TRUST_EVIDENCE_OK
+RUN_DIR=C:\dev\neverlost\proofs\receipts\neverlost_trust_pipeline_full_green\20260326T134059Z
+RECEIPT=C:\dev\neverlost\proofs\receipts\neverlost_trust_pipeline_full_green\20260326T134059Z\receipt.ndjson
+SHA256SUMS=C:\dev\neverlost\proofs\receipts\neverlost_trust_pipeline_full_green\20260326T134059Z\sha256sums.txt

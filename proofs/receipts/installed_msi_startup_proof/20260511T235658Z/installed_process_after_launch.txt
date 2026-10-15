@@ -1,0 +1,11 @@
+
+
+ProcessName      : neverlost_workbench
+Id               : 39840
+MainWindowTitle  : NeverLost Workbench
+MainWindowHandle : 5181222
+StartTime        : 5/11/2026 8:03:30 PM
+Path             : C:\Program Files\NeverLost Workbench\neverlost_workbench.exe
+
+
+
