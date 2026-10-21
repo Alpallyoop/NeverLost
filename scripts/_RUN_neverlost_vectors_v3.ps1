@@ -72,6 +72,9 @@ try {
   $sbAcl = Join-Path (Join-Path $sb "scripts") "enforce_trust_acl_v1.ps1"
   $aclRun = NL-InvokePsFile -File $sbAcl -Arguments @("-RepoRoot",$sb) -PsHost $PSExe -StdoutPath (Join-Path $io "acl.out") -StderrPath (Join-Path $io "acl.err")
   if($aclRun.ExitCode -ne 0){ Die ("ACL_CHILD_FAILED: " + $aclRun.ExitCode + " " + $aclRun.Stderr) }
+  # The ACL lane proved itself; give the sandbox back its inherited permissions so the fixture steps
+  # below can replace trust files (Windows: owner-only read ACLs cannot be overwritten or deleted).
+  NL-ResetScratchAcl (Join-Path (Join-Path $sb "proofs") "trust")
 
   # --- positive: trust root under test (live by default, fixture with NEVERLOST_TRUST_SOURCE=fixture)
   $entries = NL-AssertTrustBundleV1 -RepoRoot $sb -ExpectedPrincipal $ExpectedPrincipalGood -ExpectedNamespaces $ExpectedNamespacesGood

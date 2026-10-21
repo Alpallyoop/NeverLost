@@ -178,14 +178,29 @@ function NL-NewSandboxRepo {
 
 # Removes a scratch tree. Retries because Windows (antivirus, indexers, just-closed child handles) and
 # mounted file systems can report "directory not empty" for a moment after files are deleted.
+# Restores inherited permissions on a scratch tree. The ACL lane and NL-ProtectPrivateKey strip
+# inherited ACEs (owner-only read on trust files and keys), which leaves files the owner cannot delete
+# when the parent grants Modify rather than Full control. The owner can always rewrite the DACL.
+function NL-ResetScratchAcl([string]$Path){
+  if(-not (NL-IsWindowsHost)){ return }
+  if($Path -notmatch '[\\/]\.scratch[\\/]'){ throw ("SCRATCH_ACL_RESET_REFUSED: " + $Path) }
+  if(-not (Test-Path -LiteralPath $Path)){ return }
+  $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  try { & icacls $Path /reset /T /C /Q 2>&1 | Out-Null } finally { $ErrorActionPreference = $prev }
+  Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { -not $_.PSIsContainer -and $_.IsReadOnly } | ForEach-Object { $_.IsReadOnly = $false }
+}
+
+# Removes a scratch tree. Never throws: a leftover folder under .scratch/ (ignored by git) must not hide
+# the result or error of the lane that used it, so a failure is reported as a warning on stderr.
 function NL-RemoveScratchTree([string]$Path){
   if([string]::IsNullOrWhiteSpace($Path)){ return }
   if($Path -notmatch '[\\/]\.scratch[\\/]'){ throw ("SCRATCH_REMOVE_REFUSED: " + $Path) }
   for($i = 0; $i -lt 20; $i++){
     if(-not (Test-Path -LiteralPath $Path)){ return }
+    if($i -eq 1){ NL-ResetScratchAcl $Path }
     try { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop; return } catch { Start-Sleep -Milliseconds 250 }
   }
-  if(Test-Path -LiteralPath $Path){ throw ("SCRATCH_REMOVE_FAILED: " + $Path) }
+  if(Test-Path -LiteralPath $Path){ [Console]::Error.WriteLine("WARNING: SCRATCH_REMOVE_FAILED (left in place, ignored by git): " + $Path) }
 }
 
 function NL-RemoveSandboxRepo([string]$SandboxRoot){
