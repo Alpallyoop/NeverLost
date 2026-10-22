@@ -209,14 +209,23 @@ function NL-RemoveSandboxRepo([string]$SandboxRoot){
   NL-RemoveScratchTree $SandboxRoot
 }
 
-# Restricts a private key file to the current user so ssh-keygen accepts it.
+# Gives a key file back its inherited permissions so it can be removed (rollback of a failed issue).
+function NL-ResetKeyFileAcl([string]$Path){
+  if(-not (NL-IsWindowsHost) -or -not (Test-Path -LiteralPath $Path)){ return }
+  $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  try { & icacls $Path /reset /Q 2>&1 | Out-Null } finally { $ErrorActionPreference = $prev }
+}
+
+# Restricts a private key file to the current user (read, write, delete) so ssh-keygen accepts it.
 function NL-ProtectPrivateKey([string]$Path){
   if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){ throw ("PRIVATE_KEY_MISSING: " + $Path) }
   if(NL-IsWindowsHost){
     $user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     & icacls $Path "/inheritance:r" | Out-Null
     if($LASTEXITCODE -ne 0){ throw ("ICACLS_FAILED: inheritance " + $Path) }
-    & icacls $Path "/grant:r" ($user + ":(R,W)") | Out-Null
+    # Delete is granted too: rotation and revocation move retired keys, and a file with inheritance
+    # removed cannot be moved without it. Only the owner has any access.
+    & icacls $Path "/grant:r" ($user + ":(R,W,D)") | Out-Null
     if($LASTEXITCODE -ne 0){ throw ("ICACLS_FAILED: grant " + $Path) }
   } else {
     & chmod 600 $Path

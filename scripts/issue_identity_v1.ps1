@@ -66,57 +66,71 @@ $pubPath = $privPath + ".pub"
 $pubRel = "proofs/keys/" + $Id + "_ed25519.pub"
 $retired = @()
 
-if($Replace){
-  $retDir = Join-Path $keysDir "retired"
-  if(-not (Test-Path -LiteralPath $retDir -PathType Container)){ New-Item -ItemType Directory -Force -Path $retDir | Out-Null }
-  $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
-  foreach($f in @($privPath,$pubPath)){
-    if(Test-Path -LiteralPath $f -PathType Leaf){
-      $dest = Join-Path $retDir ([System.IO.Path]::GetFileName($f) + "." + $stamp)
-      Move-Item -LiteralPath $f -Destination $dest
-      $retired += $dest
+# Everything from retiring the old key to replacing the bundle is undone on failure: new key files are
+# removed and retired ones moved back, so a failed rotation never leaves a principal without its key.
+$moves = @(); $createdKey = $false; $createdPub = $false
+try {
+  if($Replace){
+    $retDir = Join-Path $keysDir "retired"
+    if(-not (Test-Path -LiteralPath $retDir -PathType Container)){ New-Item -ItemType Directory -Force -Path $retDir | Out-Null }
+    $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
+    foreach($f in @($privPath,$pubPath)){
+      if(Test-Path -LiteralPath $f -PathType Leaf){
+        $dest = Join-Path $retDir ([System.IO.Path]::GetFileName($f) + "." + $stamp)
+        Move-Item -LiteralPath $f -Destination $dest
+        $retired += $dest
+        $moves += ,@($f,$dest)
+      }
     }
   }
-}
 
-if(-not (Test-Path -LiteralPath $keysDir -PathType Container)){ New-Item -ItemType Directory -Force -Path $keysDir | Out-Null }
-if($Generate){
-  if((Test-Path -LiteralPath $privPath) -or (Test-Path -LiteralPath $pubPath)){ Fail "KEY_FILE_EXISTS" ($privPath + " (move it away or use -Replace)") }
-  $kg = NL-InvokeNative -Exe $ssh -Arguments @("-q","-t","ed25519","-N","","-C",$Principal,"-f",$privPath) -NullStdin
-  if($kg.Code -ne 0 -or -not (Test-Path -LiteralPath $privPath -PathType Leaf) -or -not (Test-Path -LiteralPath $pubPath -PathType Leaf)){ Fail "KEYGEN_FAILED" $kg.Output }
-  NL-ProtectPrivateKey $privPath
-  # Store the public key as one LF-terminated line so its hash never depends on line-ending conversion.
-  $core = NL-PubkeyCore ([System.IO.File]::ReadAllText($pubPath))
-  [System.IO.File]::WriteAllBytes($pubPath, (New-Object System.Text.UTF8Encoding($false)).GetBytes($core + " " + $Principal + "`n"))
-  $custody = "neverlost"
-} else {
-  $src = (Resolve-Path -LiteralPath $PubkeyPath).Path
-  $core = NL-PubkeyCore ([System.IO.File]::ReadAllText($src))
-  if($core -cnotmatch $script:NL_PubkeyRegexV1){ Fail "PUBKEY_FORMAT" ($src + " is not an ssh-ed25519 public key") }
-  if([System.IO.Path]::GetFullPath($src) -ne [System.IO.Path]::GetFullPath($pubPath)){
-    if(Test-Path -LiteralPath $pubPath){ Fail "KEY_FILE_EXISTS" $pubPath }
+  if(-not (Test-Path -LiteralPath $keysDir -PathType Container)){ New-Item -ItemType Directory -Force -Path $keysDir | Out-Null }
+  if($Generate){
+    if((Test-Path -LiteralPath $privPath) -or (Test-Path -LiteralPath $pubPath)){ Fail "KEY_FILE_EXISTS" ($privPath + " (move it away or use -Replace)") }
+    $kg = NL-InvokeNative -Exe $ssh -Arguments @("-q","-t","ed25519","-N","","-C",$Principal,"-f",$privPath) -NullStdin
+    if($kg.Code -ne 0 -or -not (Test-Path -LiteralPath $privPath -PathType Leaf) -or -not (Test-Path -LiteralPath $pubPath -PathType Leaf)){ Fail "KEYGEN_FAILED" $kg.Output }
+    $createdKey = $true
+    NL-ProtectPrivateKey $privPath
+    # Store the public key as one LF-terminated line so its hash never depends on line-ending conversion.
+    $core = NL-PubkeyCore ([System.IO.File]::ReadAllText($pubPath))
     [System.IO.File]::WriteAllBytes($pubPath, (New-Object System.Text.UTF8Encoding($false)).GetBytes($core + " " + $Principal + "`n"))
+    $custody = "neverlost"
+  } else {
+    $src = (Resolve-Path -LiteralPath $PubkeyPath).Path
+    $core = NL-PubkeyCore ([System.IO.File]::ReadAllText($src))
+    if($core -cnotmatch $script:NL_PubkeyRegexV1){ Fail "PUBKEY_FORMAT" ($src + " is not an ssh-ed25519 public key") }
+    if([System.IO.Path]::GetFullPath($src) -ne [System.IO.Path]::GetFullPath($pubPath)){
+      if(Test-Path -LiteralPath $pubPath){ Fail "KEY_FILE_EXISTS" $pubPath }
+      [System.IO.File]::WriteAllBytes($pubPath, (New-Object System.Text.UTF8Encoding($false)).GetBytes($core + " " + $Principal + "`n"))
+      $createdPub = $true
+    }
+    $custody = "consumer"
   }
-  $custody = "consumer"
-}
 
-# A key may be trusted under one principal only.
-foreach($p in $model.Principals){
-  if($p.principal -ceq $Principal){ continue }
-  foreach($k in $p.keys){ if((NL-PubkeyCore $k.pubkey) -ceq $core){ Fail "KEY_ALREADY_TRUSTED" ("same key is trusted for " + $p.principal) } }
-}
+  # A key may be trusted under one principal only.
+  foreach($p in $model.Principals){
+    if($p.principal -ceq $Principal){ continue }
+    foreach($k in $p.keys){ if((NL-PubkeyCore $k.pubkey) -ceq $core){ Fail "KEY_ALREADY_TRUSTED" ("same key is trusted for " + $p.principal) } }
+  }
 
-$newKey = [ordered]@{ key_id=$KeyId; alg="ssh-ed25519"; pubkey_path=$pubRel; pubkey_sha256=(NL-Sha256HexFile $pubPath); pubkey=$core; namespaces=[string[]]$nsSorted }
-if($null -ne $existing){
-  $existing.keys = New-Object System.Collections.Generic.List[object]
-  [void]$existing.keys.Add($newKey)
-} else {
-  $keys = New-Object System.Collections.Generic.List[object]
-  [void]$keys.Add($newKey)
-  [void]$model.Principals.Add([ordered]@{ principal=$Principal; namespaces=$null; keys=$keys })
-}
+  $newKey = [ordered]@{ key_id=$KeyId; alg="ssh-ed25519"; pubkey_path=$pubRel; pubkey_sha256=(NL-Sha256HexFile $pubPath); pubkey=$core; namespaces=[string[]]$nsSorted }
+  if($null -ne $existing){
+    $existing.keys = New-Object System.Collections.Generic.List[object]
+    [void]$existing.keys.Add($newKey)
+  } else {
+    $keys = New-Object System.Collections.Generic.List[object]
+    [void]$keys.Add($newKey)
+    [void]$model.Principals.Add([ordered]@{ principal=$Principal; namespaces=$null; keys=$keys })
+  }
 
-$hashes = NL-SaveTrustBundleV1 $RepoRoot $model
+  $hashes = NL-SaveTrustBundleV1 $RepoRoot $model
+} catch {
+  $err = $_
+  if($createdKey){ foreach($f in @($privPath,$pubPath)){ if(Test-Path -LiteralPath $f){ NL-ResetKeyFileAcl $f; Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue } } }
+  elseif($createdPub -and (Test-Path -LiteralPath $pubPath)){ Remove-Item -LiteralPath $pubPath -Force -ErrorAction SilentlyContinue }
+  foreach($mv in $moves){ if((Test-Path -LiteralPath $mv[1]) -and -not (Test-Path -LiteralPath $mv[0])){ Move-Item -LiteralPath $mv[1] -Destination $mv[0] } }
+  throw $err
+}
 $asPath = NL-WriteAllowedSignersFromTrust $RepoRoot
 $entries = NL-AssertTrustBundleV1 -RepoRoot $RepoRoot
 NL-AssertAllowedSignersCurrentV1 $RepoRoot $entries
