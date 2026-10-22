@@ -11,6 +11,10 @@ NeverLost currently contains:
 - a fail-closed trust-bundle verifier (`NL-AssertTrustBundleV1`, `scripts/verify_trust_bundle_v1.ps1`)
 - identity-bound signing and verification wrappers over OpenSSH SSHSIG
 - `allowed_signers` derivation and per-consumer export (`scripts/export_allowed_signers_v1.ps1`)
+- identity issuance, rotation and revocation (`nl issue | rotate | revoke`, `scripts/issue_identity_v1.ps1`,
+  `scripts/revoke_identity_v1.ps1`) and the plan of identities other services wait for
+  (`config/issuance_plan.v1.json`, `nl issue-plan`, `Issue_Identities.cmd`); `proofs/published/` holds the
+  bundle hash to pin and each consumer's signer list and hand-off
 - a receipt-ledger verifier (`scripts/verify_receipt_ledger_v1.ps1`)
 - published integration contracts (`docs/contracts/NEVERLOST_CONTRACTS_v1.md`) and schemas (`schemas/`)
 - one command line, `nl` (`scripts/nl.ps1`, `nl.cmd`), and Windows double-click launchers (`*.cmd` in the
@@ -26,6 +30,7 @@ NeverLost currently contains:
 - CLI selftest: `scripts/_selftest_neverlost_cli_v1.ps1`
 - CLI vectors: `scripts/verify_neverlost_cli_vectors_v1.ps1` (12 vectors)
 - Trust, signature and ledger vectors: `scripts/_RUN_neverlost_vectors_v3.ps1`
+- Identity issuance vectors: `scripts/_selftest_neverlost_issue_v1.ps1`
 - Tier-0 full green and freeze: `scripts/_RUN_neverlost_tier0_full_green_v1.ps1`, `scripts/_RUN_neverlost_tier0_freeze_v1.ps1`
 - TypeScript check: `npx tsc --noEmit`
 - frontend build: `npm run build`

@@ -1,0 +1,16 @@
+{
+  "schema": "neverlost.issuance_plan.v1",
+  "source": ".constellation/INTEGRATION_WORK.md (2026-10-21) and the consumers' own docs",
+  "note": "Identities other services are waiting for. 'nl issue-plan' shows the state; 'nl issue-plan --apply' (or Issue_Identities.cmd) issues every ready item. custody 'neverlost': NeverLost generates the key and the service is configured with its path. custody 'consumer': the service creates its key; NeverLost enrolls the public key found at 'pubkey' (service id and path inside that service's folder). Items with 'needs' wait for that input and are never issued by the plan.",
+  "identities": [
+    { "id": "bountygate", "principal": "single-tenant/device_agent/bountygate", "namespaces": ["bountygate/export"], "custody": "neverlost", "consumer": "bountygate" },
+    { "id": "covenant-gate", "principal": "single-tenant/device_agent/covenant-gate", "namespaces": ["covenant-gate/decision"], "custody": "neverlost", "consumer": "covenant-gate" },
+    { "id": "echo-producer", "principal": "single-tenant/device_agent/echo-producer", "namespaces": ["packet/envelope"], "custody": "neverlost", "consumer": "echo-transport" },
+    { "id": "lawvm", "principal": "single-tenant/device_agent/lawvm", "namespaces": ["lawvm/receipt-seal"], "custody": "neverlost", "consumer": "lawvm" },
+    { "id": "nfl", "principal": "single-tenant/device_agent/nfl", "namespaces": ["nfl/ledger-export", "nfl/ledger-export-seal", "nfl/ledger-seal"], "custody": "neverlost", "consumer": "nfl" },
+    { "id": "observatory", "principal": "single-tenant/device_agent/observatory", "namespaces": ["observatory/packet"], "custody": "consumer", "consumer": "observatory", "key_id": "observatory-device-agent-ed25519", "pubkey": { "service": "observatory", "path": "proofs/keys/observatory_ed25519.pub" }, "consumer_step": "run OBSERVATORY.cmd setup (observatory keygen) once, then run the plan again" },
+    { "id": "courier-node", "principal": "single-tenant/device_agent/courier/<node-id>", "namespaces": ["courier/message"], "custody": "neverlost", "consumer": "covenant-courier", "needs": "Courier node ids. Per node: nl issue --id courier-<node> --principal single-tenant/device_agent/courier/<node> --namespaces courier/message --generate --consumer covenant-courier" },
+    { "id": "device", "principal": "single-tenant/device_agent/device/<id>", "namespaces": ["watchtower/device-pledge"], "custody": "consumer", "consumer": "live-state-surgeon", "needs": "Live State Surgeon device ids and their public keys (replaces the dev-only lss-dev key). Principal form confirmed for WatchTower-verified devices." },
+    { "id": "dodwk-operator", "principal": "single-tenant/operator/user/<name>", "namespaces": ["dod-witness-kit"], "custody": "consumer", "consumer": "dod-witness-kit", "needs": "the operator name and the namespace DoD Witness Kit signs evidence in" }
+  ]
+}

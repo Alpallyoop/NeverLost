@@ -557,3 +557,196 @@ function NL-AssertAllowedSignersCurrentV1([string]$RepoRoot,[object[]]$Entries){
   $have = (New-Object System.Text.UTF8Encoding($false)).GetString([System.IO.File]::ReadAllBytes($asPath))
   if($have -cne $want){ throw "TRUST_ALLOWED_SIGNERS_STALE (run scripts/make_allowed_signers_v1.ps1)" }
 }
+
+# === NL_TRUSTBUNDLE_WRITER_V1 ===
+# Model of a principals-form trust bundle that round-trips byte for byte: serializing an unchanged model
+# reproduces the exact bytes it was read from (compact JSON, field order schema, created_utc, principals;
+# principal, namespaces, keys; key_id, alg, pubkey_path, pubkey_sha256, pubkey, namespaces; the final
+# line ending, if any, is kept as read).
+
+function NL-ReadTrustBundleModelV1([string]$RepoRoot,[string]$TrustBundlePath){
+  [void](NL-AssertTrustBundleV1 -RepoRoot $RepoRoot -TrustBundlePath $TrustBundlePath)
+  $raw = (New-Object System.Text.UTF8Encoding($false,$true)).GetString([System.IO.File]::ReadAllBytes($TrustBundlePath))
+  $obj = $raw | ConvertFrom-Json
+  if(@(NL-GetPropNames $obj) -notcontains "principals"){ throw "TRUST_BUNDLE_LEGACY_SHAPE_READONLY: migrate the authorities[] bundle to principals[] before issuing" }
+  $created = $null
+  $m = [regex]::Match($raw, '"created_utc"\s*:\s*"((?:[^"\\]|\\.)*)"')
+  if($m.Success){ $created = $m.Groups[1].Value }
+  $principals = New-Object System.Collections.Generic.List[object]
+  $plist = NL-GetPropRaw $obj "principals"
+  foreach($p in $plist){
+    $keys = New-Object System.Collections.Generic.List[object]
+    $klist = NL-GetPropRaw $p "keys"
+    foreach($k in $klist){
+      $kn = $null; if(@(NL-GetPropNames $k) -contains "namespaces"){ $kn = [string[]](NL-GetPropRaw $k "namespaces") }
+      [void]$keys.Add([ordered]@{ key_id=[string]$k.key_id; alg=[string]$k.alg; pubkey_path=[string]$k.pubkey_path; pubkey_sha256=[string]$k.pubkey_sha256; pubkey=[string]$k.pubkey; namespaces=$kn })
+    }
+    $pn = $null; if(@(NL-GetPropNames $p) -contains "namespaces"){ $pn = [string[]](NL-GetPropRaw $p "namespaces") }
+    [void]$principals.Add([ordered]@{ principal=[string]$p.principal; namespaces=$pn; keys=$keys })
+  }
+  $eol = ""
+  if($raw.EndsWith("`r`n")){ $eol = "`r`n" } elseif($raw.EndsWith("`n")){ $eol = "`n" }
+  return @{ CreatedUtc = $created; Principals = $principals; Raw = $raw; FinalEol = $eol }
+}
+
+function NL-JsonStr([string]$s){ return ('"' + (NL-JsonEscape $s) + '"') }
+
+function NL-TrustBundleJsonV1($Model){
+  $sb = New-Object System.Text.StringBuilder
+  [void]$sb.Append('{"schema":"neverlost.trust_bundle.v1"')
+  if($null -ne $Model.CreatedUtc){ [void]$sb.Append(',"created_utc":' + (NL-JsonStr $Model.CreatedUtc)) }
+  [void]$sb.Append(',"principals":[')
+  $pi = 0
+  foreach($p in $Model.Principals){
+    if($pi -gt 0){ [void]$sb.Append(',') }
+    [void]$sb.Append('{"principal":' + (NL-JsonStr $p.principal))
+    if($null -ne $p.namespaces){ [void]$sb.Append(',"namespaces":[' + ((@($p.namespaces) | ForEach-Object { NL-JsonStr $_ }) -join ',') + ']') }
+    [void]$sb.Append(',"keys":[')
+    $ki = 0
+    foreach($k in $p.keys){
+      if($ki -gt 0){ [void]$sb.Append(',') }
+      [void]$sb.Append('{"key_id":' + (NL-JsonStr $k.key_id) + ',"alg":' + (NL-JsonStr $k.alg) + ',"pubkey_path":' + (NL-JsonStr $k.pubkey_path) + ',"pubkey_sha256":' + (NL-JsonStr $k.pubkey_sha256) + ',"pubkey":' + (NL-JsonStr $k.pubkey))
+      if($null -ne $k.namespaces){ [void]$sb.Append(',"namespaces":[' + ((@($k.namespaces) | ForEach-Object { NL-JsonStr $_ }) -join ',') + ']') }
+      [void]$sb.Append('}')
+      $ki++
+    }
+    [void]$sb.Append(']}')
+    $pi++
+  }
+  [void]$sb.Append(']}')
+  if($Model.Contains("FinalEol") -and $Model.FinalEol){ [void]$sb.Append([string]$Model.FinalEol) }
+  return $sb.ToString()
+}
+
+# Writes a new bundle only after the candidate verifies; returns @{ Before; After } hashes.
+# The live bundle is owner-read-only after the ACL lane, so its protection is lifted for the swap; the
+# caller re-applies scripts/enforce_trust_acl_v1.ps1 afterwards.
+function NL-SaveTrustBundleV1([string]$RepoRoot,$Model){
+  $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+  $tbPath = Join-Path (Join-Path (Join-Path $root "proofs") "trust") "trust_bundle.json"
+  $before = NL-Sha256HexFile $tbPath
+  $json = NL-TrustBundleJsonV1 $Model
+  $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes($json)
+  $tmp = $tbPath + ".candidate.tmp"
+  [System.IO.File]::WriteAllBytes($tmp, $bytes)
+  try { [void](NL-AssertTrustBundleV1 -RepoRoot $root -TrustBundlePath $tmp) }
+  catch { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue; throw ("TRUST_BUNDLE_CANDIDATE_REJECTED: " + $_.Exception.Message) }
+  $isWin = ($PSVersionTable.PSEdition -ne 'Core') -or [bool](Get-Variable -Name IsWindows -ValueOnly -ErrorAction SilentlyContinue)
+  $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  try {
+    if($isWin){ & icacls $tbPath /reset /Q 2>&1 | Out-Null } else { & chmod 600 $tbPath 2>&1 | Out-Null }
+  } finally { $ErrorActionPreference = $prev }
+  [System.IO.File]::Copy($tmp, $tbPath, $true)
+  Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
+  $after = NL-Sha256HexFile $tbPath
+  if($after -cne (NL-Sha256HexBytes $bytes)){ throw "TRUST_BUNDLE_WRITE_VERIFY_FAILED" }
+  [void](NL-AssertTrustBundleV1 -RepoRoot $root)
+  return @{ Before = $before; After = $after }
+}
+
+# === NL_PUBLISH_V1 ===
+# proofs/published/ is what other services read: the bundle, its hash (to pin out of band), the derived
+# allowed_signers, and per consumer a signer list for its own principal plus a hand-off note.
+
+function NL-WriteTextLf([string]$Path,[string]$Text){
+  $d = Split-Path -Parent $Path
+  if($d -and -not (Test-Path -LiteralPath $d -PathType Container)){ New-Item -ItemType Directory -Force -Path $d | Out-Null }
+  $t = ($Text -replace "`r`n","`n")
+  if(-not $t.EndsWith("`n")){ $t += "`n" }
+  [System.IO.File]::WriteAllBytes($Path, (New-Object System.Text.UTF8Encoding($false)).GetBytes($t))
+}
+
+function NL-PublishTrustV1([string]$RepoRoot){
+  $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+  $entries = NL-AssertTrustBundleV1 -RepoRoot $root
+  $tb = Join-Path (Join-Path (Join-Path $root "proofs") "trust") "trust_bundle.json"
+  $pubDir = Join-Path (Join-Path $root "proofs") "published"
+  if(-not (Test-Path -LiteralPath $pubDir -PathType Container)){ New-Item -ItemType Directory -Force -Path $pubDir | Out-Null }
+  $sha = NL-Sha256HexFile $tb
+  [System.IO.File]::Copy($tb, (Join-Path $pubDir "trust_bundle.json"), $true)
+  NL-WriteTextLf (Join-Path $pubDir "trust_bundle.sha256") ($sha + "  trust_bundle.json")
+  NL-WriteTextLf (Join-Path $pubDir "allowed_signers") (NL-AllowedSignersTextV1 -Entries $entries)
+  $lines = New-Object System.Collections.Generic.List[string]
+  [void]$lines.Add("# NeverLost published trust")
+  [void]$lines.Add("")
+  [void]$lines.Add("Pin this hash out of band (for example courier.ps1 trust-import -ExpectedSha256):")
+  [void]$lines.Add("")
+  [void]$lines.Add("    trust_bundle.json  sha256 " + $sha)
+  [void]$lines.Add("")
+  [void]$lines.Add("| Principal | Key id | Namespaces |")
+  [void]$lines.Add("|---|---|---|")
+  foreach($e in $entries){ [void]$lines.Add("| " + [string]$e.principal + " | " + [string]$e.key_id + " | " + ((@($e.namespaces)) -join ", ") + " |") }
+  [void]$lines.Add("")
+  [void]$lines.Add("Generated by NeverLost (scripts/_lib_neverlost_v1.ps1 NL-PublishTrustV1). Do not edit; re-issue instead.")
+  NL-WriteTextLf (Join-Path $pubDir "README.md") (($lines.ToArray()) -join "`n")
+  return $pubDir
+}
+
+function NL-PublishConsumerV1 {
+  param(
+    [Parameter(Mandatory=$true)][string]$RepoRoot,
+    [Parameter(Mandatory=$true)][string]$Consumer,
+    [Parameter(Mandatory=$true)][string]$Principal,
+    [string]$PrivateKeyPath = ""
+  )
+  $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+  $all = NL-AssertTrustBundleV1 -RepoRoot $root
+  $entries = @($all | Where-Object { [string]$_.principal -ceq $Principal })
+  if($entries.Count -lt 1){ throw ("PUBLISH_PRINCIPAL_NOT_TRUSTED: " + $Principal) }
+  $dir = Join-Path (Join-Path (Join-Path $root "proofs") "published") $Consumer
+  $as = Join-Path $dir "allowed_signers"
+  NL-WriteTextLf $as (NL-AllowedSignersTextV1 -Entries $entries)
+  $tb = Join-Path (Join-Path (Join-Path $root "proofs") "trust") "trust_bundle.json"
+  $sha = NL-Sha256HexFile $tb
+  $ns = @($entries[0].namespaces)
+  $keyLine = $(if($PrivateKeyPath){ $PrivateKeyPath } else { "(held by " + $Consumer + "; NeverLost has only the public key)" })
+  $l = New-Object System.Collections.Generic.List[string]
+  [void]$l.Add("# NeverLost identity for " + $Consumer)
+  [void]$l.Add("")
+  [void]$l.Add("| Field | Value |")
+  [void]$l.Add("|---|---|")
+  [void]$l.Add("| Principal | ``" + $Principal + "`` |")
+  [void]$l.Add("| Key id | ``" + [string]$entries[0].key_id + "`` |")
+  [void]$l.Add("| Namespaces | " + (($ns | ForEach-Object { "``" + $_ + "``" }) -join ", ") + " |")
+  [void]$l.Add("| Private key | ``" + $keyLine + "`` |")
+  [void]$l.Add("| Signer list (this principal) | ``" + $as + "`` |")
+  [void]$l.Add("| Full signer list | ``" + (Join-Path (Join-Path (Join-Path $root "proofs") "published") "allowed_signers") + "`` |")
+  [void]$l.Add("| Trust bundle | ``" + $tb + "`` |")
+  [void]$l.Add("| Trust bundle sha256 (pin) | ``" + $sha + "`` |")
+  [void]$l.Add("")
+  [void]$l.Add("## Configure " + $Consumer)
+  [void]$l.Add("")
+  switch($Consumer){
+    "bountygate" {
+      [void]$l.Add("In BountyGate's ``config/integrations.local.json`` (git-ignored):")
+      [void]$l.Add("")
+      [void]$l.Add("    ""neverlost"": { ""allowedSigners"": ""<signer list above>"", ""signingKey"": ""<private key above>"", ""principal"": """ + $Principal + """, ""namespace"": """ + $ns[0] + """ }")
+    }
+    "lawvm" {
+      [void]$l.Add("    .\lawvm.ps1 seal-receipts -Key ""<private key above>"" -Signer " + $Principal)
+      [void]$l.Add("    .\lawvm.ps1 verify-receipts -RequireSignature   (allowed_signers: the signer list above)")
+    }
+    "echo-transport" {
+      [void]$l.Add("    E trust-import -SourceTrustBundle ""<trust bundle above>"" -SourceRoot ""<NeverLost folder>""")
+      [void]$l.Add("Then sign with the private key above as " + $Principal + " (namespace packet/envelope) and retire the old unencrypted producer key.")
+    }
+    "covenant-courier" {
+      [void]$l.Add("    .\courier.ps1 trust-import -TrustBundlePath ""<trust bundle above>"" -ExpectedSha256 " + $sha + " -NeverLostRoot ""<NeverLost folder>""")
+    }
+    "covenant-gate" {
+      [void]$l.Add("Sign decision documents with ``ssh-keygen -Y sign -f <private key above> -n covenant-gate/decision``; verifiers use the signer list above.")
+    }
+    "nfl" {
+      [void]$l.Add("Use the private key above for ``nfl_ledger_seal_v1.ps1`` / ``nfl_ledger_export_v1.ps1`` / ``nfl_sign_ledger_packet_v1.ps1`` instead of the dev key in NFL's ``proofs/keys``; verifiers use the signer list above.")
+    }
+    default {
+      [void]$l.Add("Sign with ``ssh-keygen -Y sign -n <namespace>`` using the private key above; verify against the signer list above.")
+    }
+  }
+  [void]$l.Add("")
+  [void]$l.Add("After any re-issue the bundle hash changes: re-import or re-pin. Generated by NeverLost; do not edit.")
+  $handoff = Join-Path $dir "HANDOFF.md"
+  NL-WriteTextLf $handoff (($l.ToArray()) -join "`n")
+  NL-AppendReceipt $root "neverlost.allowed_signers.export.v1" @{ consumer=$Consumer; principal=$Principal; out_path=$as; allowed_signers_sha256=(NL-Sha256HexFile $as); trust_bundle_sha256=$sha; state="written" } | Out-Null
+  return $handoff
+}
