@@ -90,7 +90,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| InfraBound | infrabound | venture_labs | Standalone-first mobility discovery, map presentation, provider routing, and policy-bounded transaction orchestration for transit, parking, and related public infrastructure services. | None | None |
+| InfraBound | infrabound | venture_labs | Standalone-first mobility discovery, map presentation, provider routing, and policy-bounded transaction orchestration for transit, parking, and related public infrastructure services — including flight, stay and car-rental retail through accredited supplier adapters (Proposal 0005). | None | None |
 
 ### application.news-intelligence
 
@@ -139,7 +139,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
 | Covenant Workbench | covenant-workbench | covenant | Local-first operator UI for running, verifying, and auditing Covenant Gate repositories. | None | None |
-| DoD Witness Kit Workbench | dodwk-workbench | covenant | Operator UI for DoD Witness Kit (early scaffold). | dod-witness-kit | None |
+| DoD Witness Kit Workbench | dodwk-workbench | covenant | Operator UI for DoD Witness Kit. | dod-witness-kit | None |
 
 ### development.provider-adapters
 
@@ -151,7 +151,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| ThemeForge | themeforge | devroot | Deterministic theme engine builder compiling one canonical theme spec into CSS variables, previews, and browser/extension themes. | None | None |
+| ThemeForge | themeforge | devroot | Deterministic theme engine builder compiling one canonical theme spec into CSS variables, previews, and browser/extension themes. | None | global-workbench, operators |
 
 ### development.ui-shell
 
@@ -193,7 +193,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Veritas Engine | veritas-engine | aion | AI-centered deterministic verification engine. | None | None |
+| Veritas Engine | veritas-engine | aion | AI-centered deterministic verification engine: authoritative Integrity Evidence Bundle verifier and the AION constitution's execution-integrity instrument. | None | None |
 
 ### evidence.live-state
 
@@ -205,7 +205,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| DoD Witness Kit | dod-witness-kit | covenant | Milestone/WBS verification and portable evidence certification against explicit overlay contracts. | None | constellation, operators |
+| DoD Witness Kit | dod-witness-kit | covenant | Milestone/WBS verification and portable evidence certification against explicit overlay contracts. | neverlost | constellation, operators |
 
 ### evidence.network
 
@@ -253,7 +253,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Observatory | observatory | fides | Deterministic world-signal intake layer. | None | None |
+| Observatory | observatory | fides | Deterministic world-signal intake layer: append-only feed snapshots, reproducible signed packets of articles, framing classifications, stories and Covenant Gate-admitted AI assessments. | covenant-gate, neverlost | None |
 
 ### foundation.ai-constitution
 
@@ -277,7 +277,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Never Forgetting Ledger | nfl | covenant | Never Forgetting Ledger: permanent integrity ledger for cryptographic hashes. | neverlost | anchormark, archive-recall, atlas-update, clarity, contract-registry, legacy-doctor, live-state-surgeon, packetpuncture, runledger |
+| Never Forgetting Ledger | nfl | covenant | Never Forgetting Ledger: permanent integrity ledger for cryptographic hashes. | neverlost | anchormark, archive-recall, atlas-update, clarity, contract-registry, legacy-doctor, live-state-surgeon, packetpuncture, runledger, bountygate |
 
 ### foundation.identity-profile
 
@@ -289,7 +289,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| NeverLost | neverlost | covenant | Identity, signing, trust, and provenance authority. | None | covenant-gate, recognition, rebound, rooted, live-state-surgeon, watchtower, archive-recall, contract-registry, gos-runtime, nfl, packetpuncture, runledger, triad |
+| NeverLost | neverlost | covenant | Identity, signing, trust, and provenance authority. | None | covenant-gate, recognition, rebound, rooted, live-state-surgeon, watchtower, archive-recall, contract-registry, gos-runtime, nfl, packetpuncture, runledger, triad, observatory, bountygate |
 
 ### foundation.packet-spec
 
@@ -301,13 +301,13 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Covenant Gate | covenant-gate | covenant | Deterministic policy decision, consent enforcement, and capability authorization engine. | neverlost | rooted, rebound, recognition, shutterwall, live-state-surgeon, lawvm |
+| Covenant Gate | covenant-gate | covenant | Deterministic policy decision, consent enforcement, and capability authorization engine. | neverlost | rooted, rebound, recognition, shutterwall, live-state-surgeon, lawvm, observatory |
 
 ### foundation.policy-law
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Arbiter | arbiter | covenant | Deterministic machine law engine: evaluates declarative PolicySets against factual inputs and returns cryptographically attestable allow/deny/quarantine decisions (arbiter.v1, first match wins, default deny). Pure evaluation with no side effects; sits above Packet Constitution v1 transport integrity. | None | None |
+| Arbiter | arbiter | covenant | Deterministic machine law engine: evaluates declarative PolicySets against factual inputs and returns cryptographically attestable allow/deny/quarantine decisions (arbiter.v1, first match wins, default deny). Pure evaluation with no side effects; sits above Packet Constitution v1 transport integrity. | None | bountygate |
 
 ### foundation.preservation
 
@@ -499,13 +499,13 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Covenant Courier | covenant-courier | covenant | Governed secure message and notification courier: no delivery without policy, receipts, and traceability. | None | rebound |
+| Covenant Courier | covenant-courier | covenant | Governed secure message and notification courier: no delivery without policy, receipts, and traceability. | covenant-gate, neverlost | rebound |
 
 ### workflow.offline-transport
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| Echo Transport | echo-transport | covenant | Canonical Echo transport layer: deterministic packet ingest from removable-media drop paths. | None | None |
+| Echo Transport | echo-transport | covenant | Canonical Echo transport layer: deterministic packet ingest from removable-media drop paths. | neverlost, nfl | assemblelink, operators |
 
 ### workflow.policy-migration
 
@@ -517,7 +517,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 | Service | ID | Family | Role | Upstream | Downstream |
 |---|---|---|---|---|---|
-| BountyGate | bountygate | venture_labs | Standalone-first, local-first, scope-governed bug-bounty research workspace and evidence workflow instrument. | None | None |
+| BountyGate | bountygate | venture_labs | Standalone-first, local-first, scope-governed bug-bounty research workspace and evidence workflow instrument. | nfl, arbiter, neverlost | None |
 
 ### workflow.storage-recovery
 
@@ -626,12 +626,14 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 - Pure, side-effect-free evaluation of declarative PolicySets
 - PolicySet, PolicyInput, and PolicyDecision v1 schemas
 - Attestable decision hashes (SHA-256 over canonical JSON)
+- Re-verification of Covenant Gate decisions: re-evaluating the original policy and facts and classifying the original decision
 
 **Does not own:**
 - Policy enforcement and the governance interface (covenant-gate)
 - Monitoring and recording of policy decisions (lawvm)
 - Transport and packet integrity (Packet Constitution v1)
 - Executing the permitted behavior (engines)
+- Enforcing or overriding a Covenant Gate decision (covenant-gate decides what a classification means)
 
 ### Archive Recall
 
@@ -718,10 +720,19 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Standalone-first, local-first, scope-governed bug-bounty research workspace and evidence workflow instrument.
 
 **Owns:**
-- UNCLASSIFIED
+- Bug-bounty program and project workspaces, with their scope locks, tooling locks and project access locks
+- Scope-locked local research jobs: immutable job requests and hash-chained job event logs
+- Bounded HAR (Burp and browser) traffic import, normalization and redaction
+- The research candidate, finding, evidence, redacted-export and report-draft workflow, including the BountyGate Safety Law report gate
+- BountyGate-local audit logs, verification decisions and integration receipts
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Identity, signer keys or trust bundles (NeverLost)
+- General policy or consent decisions (its scope and tooling locks govern only its own tools)
+- Permanent hash witnessing or timestamping (NFL)
+- General-purpose network scanning, exploitation, brute force, denial of service or customer-data collection
+- Submitting reports to bug-bounty platforms (HackerOne is read-only in v1)
+- Long-term preservation of evidence
 
 ### BridgeKit
 
@@ -895,10 +906,23 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Standalone deterministic contribution-accounting instrument: converts receipt-backed contribution events plus an explicit valuation ruleset into canonical contribution credits and an independently verifiable ledger.
 
 **Owns:**
-- UNCLASSIFIED
+- Contribution event intake validation (contrib.receipt.v1, contrib.receipt.v2)
+- Contribution valuation ruleset application (ruleset.v1, hash pinned)
+- Deterministic event references and duplicate / replay-accounting prevention
+- Canonical append-only contribution ledger (contrib.ledger.line.v1, contrib.ledger.line.v2)
+- Contribution summaries per event type and per contributor (contrib.summary.v1)
+- Independent ledger recomputation and verification (contrib.verify_result.v1)
+- Receipt adapters that normalize upstream evidence into intake receipts
+- Integration receipts for its own exchanges
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Establishing whether an external event occurred (the source service)
+- Identity issuance, principals or signatures (neverlost)
+- Policy, consent or authorization decisions, including ruleset approval (arbiter, covenant-gate)
+- Payments, currency, tokens, securities or treasury operations
+- Source-system storage or internal source-system schemas
+- Converting contribution credits into external economic entitlement
+- Witnessing hashes (nfl)
 
 ### Convergence Suite
 
@@ -913,10 +937,22 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Ecosystem-wide deterministic convergence authority: canonical vectors, expected outcomes, cross-instrument convergence rules, exit-code contracts.
 
 **Owns:**
-- UNCLASSIFIED
+- Cross-instrument convergence vector sets, versioned and frozen by freeze manifest and tag
+- Expected outcomes for every convergence vector (PASS/FAIL, reason token, pinned derived identifiers)
+- The CS global exit-code contract and its precedence
+- The reason-token check order as encoded in convergence vectors
+- The CS reference runner, adopter kit and independent cross-check
+- CS schemas (cs.case, cs.expected, cs.vector_manifest, cs.vector_index, cs.convergence_report, cs.instrument_manifest, cs.adapter_result, cs.run_receipt, cs.release_receipt)
+- Freeze manifests and release receipts of its own vector sets
+- The convergence matrix (receipt-backed cross-instrument outcomes)
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Serialization law, including the CanonJSON rules themselves (covenant-systems)
+- Packet Constitution and PacketId law (hashcanon, formal-spec-layer)
+- Production packet build or verification (cpr, apv, traceglass)
+- Any instrument's implementation or adapters (each adopter)
+- Witnessing hashes (nfl), identity and signing (neverlost), policy decisions (arbiter, covenant-gate)
+- Another service's release decision
 
 ### CookieGate
 
@@ -957,10 +993,17 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** CORE engine-family platform for governed, coupled multi-domain measurement and correlation.
 
 **Owns:**
-- UNCLASSIFIED
+- CORE physics engine lanes and their sealed results (engine identity: registry/CORE_VERTICAL_REGISTRY.md)
+- TERRA Workbench project format terra.project.v1 and sealed workbench results
+- Physical measurement: calibration records core.calibration_artifact.v1, measurement campaigns (core.campaign_prediction.v1, core.campaign_intent.v1, core.campaign_raw.v1, core.campaign_receipt.v1), Benchmark-A physical runs and the v1.1 amendment, frozen extraction methods
+- RGSR fusion over sealed outputs (correlation only); run bundles and CORE seals (core.run_seal.v1, core.seal.v1)
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Experimental-design and recipe provenance ledgers (recipe-ledger)
+- Scenario transcripts (dsse)
+- Publication, identity and signing (Constellation / Covenant family)
+- CORE governance law (authored in the Core-platform governance repository; carried here as a restored copy)
+- Claims of physical validation before a physical campaign or Benchmark A has passed
 
 ### CorridorWatch
 
@@ -975,10 +1018,20 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Regional infrastructure-development intelligence platform: reconstructs persistent projects from public evidence, detects material change, and routes updates to people who follow affected places (first vertical: U.S. passenger rail).
 
 **Owns:**
-- UNCLASSIFIED
+- Persistent infrastructure project identity and its supersession chain
+- The CorridorWatch evidence model: captured documents, claims, evidence and authority tiers (A-D)
+- The append-only, hash-chained project event ledger (EVENT, DECISION, CORROBORATION) and its verifier
+- The deterministic materiality law, deduplication and conflict policy
+- Materialized project state (corridorwatch.project_state canonical JSON) derived from the ledger
+- Consumer watches, alerts, engagement windows, feeds and digests for infrastructure updates
+- The source registry and source-health monitoring for public infrastructure sources
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Official records themselves (the issuing agency stays authoritative)
+- Timetables, ticketing and operations data
+- General news aggregation or social features
+- Identity providers or messaging transport (email/SMS goes through a registered communications service with receipts)
+- General policy-decision engines (its acceptance policy is local)
 
 ### Covenant Courier
 
@@ -993,10 +1046,19 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Governed secure message and notification courier: no delivery without policy, receipts, and traceability.
 
 **Owns:**
-- UNCLASSIFIED
+- Governed delivery of messages and notifications: nothing is sent without a policy decision, a product receipt and a traceable frame
+- Delivery policy evaluation for a message (covenant_courier.product_policy.v1)
+- The covenant_courier product contracts (message, notification, policy_decision, product_receipt, delivery, product_receipt_chain, product_policy)
+- The append-only product receipt log and its hash chain
+- VTP: the v1 transport protocol and the v2 secure session core
+- Courier's node, network and session registries (delivery routing state)
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Identity creation, signer lists and key custody (neverlost)
+- Policy authority beyond the delivery gate (covenant-gate, arbiter)
+- Permanent witnessing of hashes (nfl)
+- Email relay, mailboxes, mail delivery-state truth, retries and conversation projections (rebound)
+- UI (global-workbench hosts any Courier panels)
 
 ### Covenant Gate
 
@@ -1025,6 +1087,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 - Message transport
 - Application storage
 - Runtime telemetry production
+- Re-verification and classification of its own decisions (arbiter)
 
 **Capabilities:** policy_gate, allow_deny, decision_receipts
 
@@ -1197,13 +1260,13 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 **Classification:** registered
 
-**Role:** Operator UI for DoD Witness Kit (early scaffold).
+**Role:** Operator UI for DoD Witness Kit.
 
 **Owns:**
-- UNCLASSIFIED
+- Operator UI over dod-witness-kit actions (allowlisted, receipted)
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Verification, certification or drift logic (dod-witness-kit)
 
 ### DSSE
 
@@ -1242,10 +1305,23 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Canonical Echo transport layer: deterministic packet ingest from removable-media drop paths.
 
 **Owns:**
-- UNCLASSIFIED
+- Offline packet movement between nodes via removable media (outbox, USB, inbox) and its operator entrypoints
+- Non-mutating Packet Constitution v1 (Option A) verification at the transport boundary, and the Echo signature profile
+- Inbox admission: staged copy, re-verification, atomic acceptance, duplicate and replay detection
+- Quarantine of failed or conflicting packets (append-only)
+- echo.receipt.v2 transport receipts and their hash chain; echo.repair_report.v2
+- echo.packet.manifest.v1 and the pack builder for Echo-produced packets
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Identity issuance, signer lists or key custody beyond its own producer key (neverlost)
+- Packet law itself and the canonical bytes definition (formal-spec-layer, hashcanon, cpr)
+- Permanent hash witnessing (nfl)
+- Policy decisions about what may be transported (covenant-gate, arbiter)
+- What a packet's payload means, or installing and applying it (consumers such as assemblelink)
+- Network transport, relays or messaging (relay-tunnel, covenant-courier)
+- Long-term preservation and restore (archive-recall, triad)
+
+**Capabilities:** offline_transport, packet_verification, quarantine
 
 ### Ecosystem Boundary Manifest
 
@@ -1353,10 +1429,13 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** AI verification instrument: records, identifies, timestamps, exports and verifies a person's AI conversations and AI-made changes across browsers and desktop apps; monitors for drift; judges nothing.
 
 **Owns:**
-- UNCLASSIFIED
+- Capture of a person's AI conversations and of changes AI makes
+- Canonicalization, hashing, packet build and verification of that evidence
+- Drift reports, receipts, export and import of that evidence
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Judging whether an AI output is true, good or safe (consumers such as apv, arbiter, people)
+- Training labels (humans or labelling packs)
 
 ### HashCanon
 
@@ -1371,10 +1450,20 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Deterministic packet-physics and canonical-bytes layer: PacketId law, sha256sums coverage, non-mutating verification.
 
 **Owns:**
-- UNCLASSIFIED
+- PacketId law for Option A packets (PacketId = SHA-256 of manifest.json bytes)
+- sha256sums.txt coverage and canonical-bytes rules for packet law files
+- CanonJson v1 definition used for content-bound manifests
+- Non-mutating authoritative packet verifier and its failure tokens
+- Manifest contracts hashcanon.manifest.v1 and hashcanon.packet.manifest.v1
+- Golden positive and negative packet vectors for the above
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Payload content, payload schemas and payload canonical form (producing service)
+- Signatures, signer identity and trust bundles (neverlost, producers)
+- Packet build and runtime orchestration (cpr)
+- Policy and admission decisions (arbiter, covenant-gate)
+- Ledger storage and witnessing of hashes (nfl)
+- Telemetry verification and alerting (watchtower)
 
 ### HelpCC
 
@@ -1447,7 +1536,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 **Classification:** registered
 
-**Role:** Standalone-first mobility discovery, map presentation, provider routing, and policy-bounded transaction orchestration for transit, parking, and related public infrastructure services.
+**Role:** Standalone-first mobility discovery, map presentation, provider routing, and policy-bounded transaction orchestration for transit, parking, and related public infrastructure services — including flight, stay and car-rental retail through accredited supplier adapters (Proposal 0005).
 
 **Owns:**
 - Mobility intent normalization (place, stop, station, route, parking zone, time)
@@ -1458,6 +1547,8 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 - Routing users to external providers when direct integration is unavailable
 - Quote, payment, activation, reconciliation, refund, and receipt orchestration through approved adapters
 - Local transaction and integration evidence
+- Travel offers, quotes and orders for flights, stays and cars through approved supplier adapters (Duffel Air, Duffel Stays, LiteAPI, Duffel Cars), as merchant of record for the customer payment
+- Anonymous paid-price statistics from its own confirmed bookings (k-anonymity of at least 3), favorites and price alerts
 
 **Does not own:**
 - Identity, signing, trust, or provenance authority
@@ -1465,6 +1556,7 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 - Authoritative transit schedules, vehicle positions, fares, parking availability, or operator sessions
 - Card-data vault or payment network
 - Municipal, transit-agency, mapping, Stripe, or parking-operator systems of record
+- Travel inventory, supplier prices and fulfillment (the supplier and its partners stay authoritative; a booking is confirmed only by the supplier's reference)
 
 ### Integration Contract Registry
 
@@ -1515,10 +1607,19 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Provenance-first historical recovery and archival intelligence engine.
 
 **Owns:**
-- UNCLASSIFIED
+- LastSignal evidence model (sources, objects, claims, notes, reports, watches, alerts, cases, packets, version history, receipts)
+- Enforcement of the five LastSignal evidence laws
+- Deterministic case reconstruction and evidence packet verification
+- Source intake into a content-addressed cache and rule-based lead extraction
+- Claim review and case closure workflows
+- Read-only derived views and exports, including the local Workbench viewer
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Historical truth beyond recorded evidence
+- AI inference or automated claim acceptance
+- Map tile hosting and geodata products
+- Identity, authentication, signing keys, multi-user access control
+- Other services' records or databases
 
 ### LawVM
 
@@ -1729,13 +1830,24 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 **Classification:** registered
 
-**Role:** Deterministic world-signal intake layer.
+**Role:** Deterministic world-signal intake layer: append-only feed snapshots, reproducible signed packets of articles, framing classifications, stories and Covenant Gate-admitted AI assessments.
 
 **Owns:**
-- UNCLASSIFIED
+- Intake of public world signals (RSS 2.0, RSS 1.0, Atom) into append-only, content-addressed snapshots
+- Deterministic derivation of articles, revisions, framing classifications, stories and follow-up links
+- The framing lexicon and classifier (observatory.framing_lexicon.v1, observatory.classifier.v2)
+- The AI assessment request, output contract, prompt and admission policy for news items
+- Observatory packet manifests (observatory.packet.manifest.v1) and their content rules
+- Observatory run, test and full-green receipts
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Judging whether news is true (people; verification instruments such as veritas-engine)
+- Policy decisions and admission of AI output (covenant-gate)
+- Packet law, PacketId and the CanonJson v1 definition (hashcanon)
+- Identity, keys, signatures and trust roots (neverlost)
+- Permanent witnessing of hashes (nfl)
+
+**Capabilities:** world_signal_intake, framing_analysis, governed_ai_assessment
 
 ### PacketPuncture
 
@@ -2154,10 +2266,25 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 **Role:** Deterministic theme engine builder compiling one canonical theme spec into CSS variables, previews, and browser/extension themes.
 
 **Owns:**
-- UNCLASSIFIED
+- Theme spec contract (themeforge.theme.v1, themeforge.theme.v2) and its normalisation rules
+- Compilation of a theme spec into browser theme formats: Chromium (Chrome, Edge, Brave, Vivaldi, Opera), Opera GX mods, Firefox, Recognition themes
+- Animated new tab extension, the motion runtime and its effect catalogue
+- Extension UI kit (themeforge.tokens.v1, CSS components, page templates) for ecosystem extensions
+- Theme build and package receipts, sha256sums and the append-only build ledger
+- ThemeForge Studio (no-code editor) and its website theme.theconstellationnetwork.com
+- Local engine contract themeforge.api.v1
+- Store listings (themeforge.listing.v1), store categories and their mapping to each store's categories
+- Store submission kits (themeforge.store.kit.v1) and submission to Chrome Web Store, Firefox Add-ons and Edge Add-ons through the owner's own accounts; kits for Opera add-ons and GX.store
+- The append-only store submission log (themeforge.store.submission.v1)
+- Opera wallpaper archives (persona.ini with video or picture) for animated Opera start pages
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Recognition's theme acceptance rules, start page or theme library (recognition)
+- The Global Workbench shell, its plugin contract or its shell tokens (global-workbench)
+- Store accounts, their credentials and the stores' review, signing and listing decisions
+- Hosted store submission: store credentials stay on the owner's computer (.work/, never committed, never returned by the API)
+- Identity, signing or provenance of builds (neverlost)
+- The content or licensing of pictures and videos supplied by theme authors
 
 ### TraceGlass
 
@@ -2212,13 +2339,24 @@ Constellation (`governance.ecosystem-authority`) sits beside this stack as a gov
 
 **Classification:** registered
 
-**Role:** AI-centered deterministic verification engine.
+**Role:** AI-centered deterministic verification engine: authoritative Integrity Evidence Bundle verifier and the AION constitution's execution-integrity instrument.
 
 **Owns:**
-- UNCLASSIFIED
+- Integrity Evidence Bundle v1 format and its reference verifier
+- verification_result.v1 integrity verdicts
+- Deterministic normalization and evidence-linked integrity analysis
+- Hard-gate admission of AI and model assessments
+- AION execution-integrity validation of ai.artifact.v1, ai.execution_trace.v1 and ai.constitution.bundle.v1
+- SSHSIG envelope verification for AI run packets
+- Veritas run-receipt ledger and test vectors
 
 **Does not own:**
-- No ownership boundaries approved yet
+- Identity issuance, key custody and trust roots (neverlost, anchormark)
+- Permanent hash witnessing (nfl)
+- Packet Constitution packet law and PacketId (hashcanon, cpr, formal-spec-layer, apv)
+- The AION constitution itself (aion)
+- Evidence collection (meuseblob) and policy decisions (arbiter, covenant-gate)
+- Recording of AI conversations (haai)
 
 ### WatchTower
 
@@ -2258,7 +2396,7 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | assemblelink | archive-recall | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | assemblelink | contract-registry | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | assemblelink | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
-| assemblelink | echo-transport | medium | medium | None | specified by consumer, witness nfl | recorded |
+| assemblelink | echo-transport | medium | medium | echo.transport.cli.v1, echo.receipt.v2 | specified by consumer, witness nfl, carries echo.receipt.v2 | recorded; contracts named (proposal 0015, 2026-10-15, Echo Transport proposal 0001) |
 | assemblelink | rebound | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | assemblelink | rooted | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | assemblelink | soteriavault | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
@@ -2274,12 +2412,14 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | constellation | triad | owner-declared | owner | triad.attestation.restore.v1 | specified by consumer, witness nfl | compatible-added (owner via proposal 0008, 2026-10-09) |
 | constellation | watchtower | owner-declared | owner | watchtower.health_report.v1, watchtower.heartbeat.v1 | specified by consumer, witness nfl | compatible-added (owner via proposal 0008, 2026-10-09) |
 | contract-registry | archive-recall | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
-| contract-registry | atlas-update | medium | medium | None | specified by consumer, witness nfl | recorded |
-| contract-registry | neverlost | strong | high | neverlost.receipt.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | upstream-added |
+| contract-registry | atlas-update | declared | unverified | None | specified by consumer, witness nfl | re-checked (contract-registry proposal 0001, Constellation proposal 0017): the 4 references are documentation and exported-workbench mentions; no data exchange |
+| contract-registry | neverlost | strong | high | neverlost.receipt.v1, neverlost.trust_bundle.v1 | witnessed by consumer, witness nfl, carries neverlost.receipt.v1 | upstream-added; receipts emitting (contract-registry proposal 0001, Constellation proposal 0017) |
 | contract-registry | nfl | strong | high | nfl.ingest.v1 | specified by consumer, witness nfl | upstream-added |
-| convergence-suite | nfl | medium | medium | None | specified by consumer, witness nfl | recorded |
+| contribution-ledger | watchtower | owner-declared | owner | watchtower.telemetry.receipt.v1 | emitting by consumer, witness nfl, carries watchtower.telemetry.receipt.v1 | compatible-added (owner via proposal 0015, 2026-10-15; Contribution Ledger proposal 0001): optional connector |
 | core-platform | neverlost | strong | low | neverlost.receipt.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | recorded |
-| covenant-gate | arbiter | planned | unverified | policy.policyset.v1, policy.input.v1, policy.decision.v1 | specified by consumer, witness nfl, carries policy.decision.v1 | planned (owner via proposal 0012, 2026-10-15; Arbiter proposal 0002): replaces the reversed arbiter -> covenant-gate record |
+| covenant-courier | covenant-gate | owner-declared | owner | covenantgate.eval_output.v1 | emitting by consumer, witness nfl | upstream-added (owner via proposal 0015, 2026-10-15; Covenant Courier proposal 0001): optional delivery gate |
+| covenant-courier | neverlost | owner-declared | owner | neverlost.trust_bundle.v1 | emitting by consumer, witness nfl | upstream-added (owner via proposal 0015, 2026-10-15; Covenant Courier proposal 0001): optional, trust-import |
+| covenant-gate | arbiter | planned | unverified | policy.policyset.v1, policy.input.v1, policy.decision.v1, policy.reverification.v1 | specified by consumer, witness nfl, carries policy.decision.v1, policy.reverification.v1 | planned (owner via proposal 0012 part 2, 2026-10-15): Covenant Gate decides, then hands the decision with its policy and facts to Arbiter, which re-evaluates them and classifies the original decision |
 | covenant-gate | lawvm | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | covenant-gate | neverlost | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | covenant-gate | nfl | strong | low | nfl.ingest.v1 | specified by consumer, witness nfl | recorded |
@@ -2289,24 +2429,30 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | covenant-gate | soteriavault | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | covenant-systems | constellation | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | csl | cpr | medium | medium | cpr.packet.manifest.v1 | specified by consumer, witness nfl | recorded |
-| dod-witness-kit | neverlost | medium | medium | neverlost.trust_bundle.v1 | specified by consumer, witness nfl | recorded |
-| dod-witness-kit | relaymesh | medium | medium | None | specified by consumer, witness nfl | recorded |
-| dodwk-workbench | dod-witness-kit | medium | medium | None | specified by consumer, witness nfl | already-declared |
+| dod-witness-kit | neverlost | medium | medium | neverlost.trust_bundle.v1 | emitting by consumer, witness nfl | recorded; receipt emitting (proposal 0016, 2026-10-15, DoD Witness Kit proposal 0002) |
+| dod-witness-kit | relaymesh | medium | medium | dodwk.adapter_export.v1 | emitting by consumer, witness nfl | recorded; contract named, receipt emitting (proposal 0016, 2026-10-15, DoD Witness Kit proposal 0002) |
+| dodwk-workbench | dod-witness-kit | medium | medium | dodwk.engine_cli.v1 | emitting by consumer, witness nfl | already-declared; contract named, receipt emitting (proposal 0016, 2026-10-15, DoD Witness Kit proposal 0002) |
+| echo-transport | neverlost | owner-declared | owner | neverlost.trust_bundle.v1 | emitting by consumer, witness nfl | upstream-added (owner via proposal 0015, 2026-10-15; Echo Transport proposal 0001): optional, trust-import |
+| echo-transport | nfl | owner-declared | owner | nfl.ingest.v1 | emitting by consumer, witness nfl | upstream-added (owner via proposal 0015, 2026-10-15; Echo Transport proposal 0001): optional, nfl-export |
 | ecosystem-boundary-manifest | constellation | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | ecosystem-boundary-manifest | covenant-systems | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | global-workbench | constellation | owner-declared | owner | constellation.api.v1 | specified by consumer, witness nfl | compatible-added (owner via proposal 0008, 2026-10-09) |
+| global-workbench | covenant-courier | planned | owner | covenant_courier.settings.v1 | specified by consumer, witness nfl | planned (owner via proposal 0015, 2026-10-15; Covenant Courier proposal 0001): workbench plugin; contract to be defined |
 | global-workbench | neverlost | medium | medium | neverlost.settings.v1 | specified by consumer, witness nfl | recorded |
 | global-workbench | nfl | medium | medium | nfl.settings.v1 | specified by consumer, witness nfl | recorded |
 | global-workbench | rie | medium | medium | rie.settings.v1 | specified by consumer, witness nfl | recorded |
 | global-workbench | watchtower | medium | medium | watchtower.settings.v1 | specified by consumer, witness nfl | recorded |
 | gos-runtime | neverlost | strong | high | neverlost.receipt.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | upstream-added |
 | gos-runtime | nfl | medium | medium | nfl.ingest.v1 | specified by consumer, witness nfl | recorded |
-| haai | hashcanon | strong | high | hashcanon.manifest.v1 | specified by consumer, witness nfl | upstream-added |
-| hashcanon | cpr | medium | medium | cpr.packet.manifest.v1 | specified by consumer, witness nfl | recorded |
+| haai | hashcanon | strong | high | hashcanon.manifest.v1 | emitting by consumer, witness nfl | upstream-added; receipt emitting (proposal 0015, 2026-10-15, HAAI proposal 0015) |
+| haai | veritas-engine | planned | owner | veritas.aion_check.v1, verification_result.v1 | specified by consumer, witness nfl | planned (owner via proposal 0016, 2026-10-15; Veritas Engine docs/HANDOFF.md): Veritas side built, haai side to build |
+| hashcanon | cpr | medium | medium | cpr.packet.manifest.v1 | emitting by consumer, witness nfl | recorded; receipt emitting (proposal 0015, 2026-10-15, HashCanon proposal 0001) |
+| helpcc | veritas-engine | planned | owner | veritas.gate_result.v1, veritas.aion_check.v1 | specified by consumer, witness nfl | planned (owner via proposal 0016, 2026-10-15; Veritas Engine docs/HANDOFF.md): Veritas side built, helpcc side to build |
 | index-lens | apv | medium | medium | None | specified by consumer, witness nfl | recorded |
 | index-lens | bridgekit | medium | medium | None | specified by consumer, witness nfl | recorded |
 | index-lens | neverlost | medium | medium | neverlost.trust_bundle.v1 | specified by consumer, witness nfl | recorded |
 | koiosai | aion | strong | high | aion.artifact.produced.v1, aion.bundle.produced.v1, aion.trace.produced.v1 | specified by consumer, witness nfl | upstream-added |
+| koiosai | veritas-engine | planned | owner | veritas.aion_check.v1 | specified by consumer, witness nfl | planned (owner via proposal 0016, 2026-10-15; Veritas Engine docs/HANDOFF.md): Veritas side built, koiosai side to build |
 | lawvm | arbiter | planned | unverified | policy.decision.v1 | specified by consumer, witness nfl, carries policy.decision.v1 | planned (owner via proposal 0012, 2026-10-15; Arbiter proposal 0002): replaces the reversed arbiter -> lawvm record |
 | lawvm | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | lawvm | neverlost | planned | owner | trust_bundle.v1 | specified by consumer, witness nfl | planned (owner via proposal 0011, 2026-10-15): signer list and seal-key custody for LawVM receipt seals |
@@ -2318,14 +2464,15 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | live-state-surgeon | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | live-state-surgeon | hashcanon | strong | high | hashcanon.packet.manifest.v1 | specified by consumer, witness nfl | upstream-added |
 | live-state-surgeon | neverlost | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
-| live-state-surgeon | nfl | strong | high | nfl.receipt.v1 | specified by consumer, witness nfl, carries nfl.receipt.v1 | upstream-added |
+| live-state-surgeon | nfl | declared | unverified | nfl.receipt.v1 | specified by consumer, witness nfl, carries nfl.receipt.v1 | standalone-only local pointer rows; the integrated path is live-state-surgeon > watchtower > nfl (NFL proposal 0002, Constellation proposal 0017) |
 | live-state-surgeon | shutterwall | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | live-state-surgeon | watchtower | strong | high | watchtower.alert.v1, watchtower.heartbeat.v1, watchtower.telemetry.receipt.v1, watchtower.telemetry_event.v1 | specified by consumer, witness nfl, carries watchtower.telemetry.receipt.v1 | already-declared |
 | neverlost | watchtower | strong | high | watchtower.heartbeat.v1 | specified by consumer, witness nfl | reverse-declared |
 | nfl | cpr | medium | medium | cpr.packet.manifest.v1 | specified by consumer, witness nfl | recorded |
 | nfl | neverlost | strong | high | neverlost.receipt.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | upstream-added |
 | nfl | watchtower | medium | medium | watchtower.handoff.manifest.v1 | specified by consumer, witness nfl | recorded |
-| observatory | neverlost | medium | medium | neverlost.trust_bundle.v1 | specified by consumer, witness nfl | recorded |
+| observatory | covenant-gate | strong | high | covenantgate.eval_output.v1 | emitting by consumer, witness nfl | upstream-added (owner via proposal 0019, 2026-10-21; Observatory proposal 0002): AI assessment admission through cg_eval_cli_v1.ps1 with a pinned base policy |
+| observatory | neverlost | strong | high | neverlost.trust_bundle.v1 | emitting by consumer, witness nfl | recorded; receipt emitting (owner via proposal 0019, 2026-10-21; Observatory proposal 0002): consumer-side trust bundle verification, allowed_signers, SSHSIG packet signatures |
 | packetpuncture | anchormark | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | packetpuncture | neverlost | strong | high | neverlost.pledge.v1, neverlost.trustbundle.v1 | specified by consumer, witness nfl | upstream-added |
 | packetpuncture | nfl | strong | high | nfl.ingest.v1 | specified by consumer, witness nfl | upstream-added |
@@ -2333,6 +2480,7 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | pie | csl | medium | medium | None | specified by consumer, witness nfl | recorded |
 | pie | haai | medium | medium | None | specified by consumer, witness nfl | recorded |
 | pie | nfl | medium | medium | None | specified by consumer, witness nfl | recorded |
+| pie | veritas-engine | planned | owner | veritas.envelope_check.v1, veritas.aion_check.v1 | specified by consumer, witness nfl | planned (owner via proposal 0016, 2026-10-15; Veritas Engine docs/HANDOFF.md): Veritas side built, pie side to build |
 | proteusops | contract-registry | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | proteusops | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | proteusops | live-state-surgeon | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
@@ -2346,11 +2494,11 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | recognition | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | recognition | neverlost | strong | high | neverlost.trust_bundle.v1 | specified by consumer, witness nfl | already-declared |
 | recognition | soteriavault | strong | high | soteriavault.connector_contract.v1, soteriavault.connector_grant.v1, soteriavault.connector_registry.v1 | specified by consumer, witness nfl | compatible-added (optional connector / would break dependency direction) |
-| relaymesh | dod-witness-kit | medium | medium | None | specified by consumer, witness nfl | recorded |
+| relaymesh | dod-witness-kit | medium | medium | dodwk.adapter_export.v1 | specified by consumer, witness nfl | recorded; contract named (proposal 0016, 2026-10-15) |
 | rooted | assemblelink | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | rooted | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | runledger | neverlost | strong | high | neverlost.allowed_signers.make.v1, neverlost.receipt.v1, neverlost.sig.verify.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | upstream-added |
-| runledger | nfl | strong | high | nfl.ingest.v1, nfl.receipt.ingested.v1 | specified by consumer, witness nfl, carries nfl.receipt.ingested.v1 | upstream-added |
+| runledger | nfl | strong | high | nfl.ingest.v1, nfl.receipt.v1 | specified by consumer, witness nfl, carries nfl.receipt.v1 | upstream-added; nfl.receipt.ingested.v1 is RunLedger's own event type, replaced by nfl.receipt.v1 (NFL proposal 0002) |
 | shadowprofile | cookiegate | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | shutterwall | homegate | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | shutterwall | neverlost | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
@@ -2358,17 +2506,25 @@ Every integration writes a receipt for each exchange (proposal 0013): the emitte
 | soteriavault | anchormark | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | soteriavault | assemblelink | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
 | soteriavault | covenant-gate | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
-| soteriavault | neverlost | strong | high | neverlost.contract.v1 | specified by consumer, witness nfl | compatible-added (optional connector / would break dependency direction) |
+| soteriavault | neverlost | strong | high | neverlost.contract.v1, soteriavault.attestation.v1 | specified by consumer, witness nfl, carries soteriavault.attestation.v1 | compatible-added (optional connector / would break dependency direction); carries soteriavault.attestation.v1 (SoteriaVault proposal CONSTELLATION_INTEGRATION_EMITTING_V1) |
 | soteriavault | packetpuncture | declared | unverified | None | specified by consumer, witness nfl | declared-compatible |
-| soteriavault | rebound | strong | high | rebound.contract.v1 | specified by consumer, witness nfl | compatible-added (optional connector / would break dependency direction); planned link (owner, 2026-10-07) |
+| soteriavault | rebound | strong | high | rebound.contract.v1, soteriavault.connector_grant.v1 | specified by consumer, witness nfl, carries soteriavault.connector_grant.v1 | compatible-added (optional connector / would break dependency direction); planned link (owner, 2026-10-07); carries soteriavault.connector_grant.v1 (SoteriaVault proposal CONSTELLATION_INTEGRATION_EMITTING_V1) |
 | soteriavault | recognition | strong | high | recognition.contract.v1 | specified by consumer, witness nfl | reverse-declared |
-| soteriavault | watchtower | strong | high | watchtower.contract.v1 | specified by consumer, witness nfl | compatible-added (optional connector / would break dependency direction) |
+| soteriavault | watchtower | strong | high | watchtower.contract.v1, soteriavault.attestation.v1 | specified by consumer, witness nfl, carries soteriavault.attestation.v1 | compatible-added (optional connector / would break dependency direction); carries soteriavault.attestation.v1 (SoteriaVault proposal CONSTELLATION_INTEGRATION_EMITTING_V1) |
 | triad | archive-recall | declared | unverified | None | specified by consumer, witness nfl | declared-upstream |
 | triad | neverlost | strong | high | neverlost.receipt.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | upstream-added |
+| veritas-engine | aion | planned | owner | ai.artifact.v1, ai.execution_trace.v1, ai.constitution.bundle.v1 | specified by consumer, witness nfl | planned (owner via proposal 0016, 2026-10-15; Veritas Engine docs/HANDOFF.md): Veritas side built, veritas-engine side to build |
 | watchtower | arbiter | planned | unverified | policy.policyset.v1, policy.input.v1, policy.decision.v1 | specified by consumer, witness nfl, carries policy.decision.v1 | planned (owner via proposal 0012, 2026-10-15; Arbiter proposal 0002): replaces the reversed arbiter -> watchtower record |
 | watchtower | clarity | medium | medium | clarity.validator_scan.v1 | specified by consumer, witness nfl | recorded |
 | watchtower | neverlost | strong | high | neverlost.receipt.v1, neverlost.trust_bundle.v1 | specified by consumer, witness nfl, carries neverlost.receipt.v1 | already-declared |
-| watchtower | nfl | medium | medium | nfl.tier0.selftest.v1 | specified by consumer, witness nfl | recorded |
+| watchtower | nfl | medium | medium | None | specified by consumer, witness nfl | recorded; nfl.tier0.selftest.v1 removed: frozen Tier-0 evidence from 2026-03-07, not a live exchange (NFL proposal 0002) |
+| bountygate | nfl | owner-declared | owner | nfl.ledger.record.v1 | emitting by consumer, witness nfl | upstream-added (owner via Constellation proposal 0020, 2026-10-21; BountyGate proposal BOUNTYGATE_CONSTELLATION_INTEGRATIONS): optional; commits evidence hashes with nfl_cli_v1.ps1 commit/lookup |
+| bountygate | arbiter | owner-declared | owner | policy.input.v1, policy.decision.v1 | emitting by consumer, witness nfl, carries policy.decision.v1 | upstream-added (owner via Constellation proposal 0020, 2026-10-21; BountyGate proposal BOUNTYGATE_CONSTELLATION_INTEGRATIONS): optional second opinion on active-tool plans; can only tighten |
+| bountygate | neverlost | owner-declared | owner | neverlost.allowed_signers.make.v1, neverlost.sig.verify.v1 | emitting by consumer, witness nfl | upstream-added (owner via Constellation proposal 0020, 2026-10-21; BountyGate proposal BOUNTYGATE_CONSTELLATION_INTEGRATIONS): optional, trust-import; signs sanitized exports with a NeverLost-granted key, namespace bountygate/export |
+| themeforge | recognition | owner-declared | owner | recognition.theme.library.v1 | emitting by consumer, witness nfl | compatible-added (owner via proposal 0021, 2026-10-21): ThemeForge publishes themes into Recognition's theme library; optional for both |
+| global-workbench | themeforge | owner-declared | owner | themeforge.api.v1 | emitting by consumer, witness nfl | compatible-added (owner via proposal 0021, 2026-10-21): ThemeForge plugin in Global Workbench through the local themeforge.api.v1 engine; optional for both |
+| cookiegate | themeforge | owner-declared | owner | themeforge.tokens.v1 | specified by consumer, witness nfl | compatible-added (owner via proposal 0021, 2026-10-21): planned: CookieGate pages adopt the ThemeForge extension UI kit |
+| shadowprofile | themeforge | owner-declared | owner | themeforge.tokens.v1 | specified by consumer, witness nfl | compatible-added (owner via proposal 0021, 2026-10-21): planned: ShadowProfile pages adopt the ThemeForge extension UI kit |
 
 ## Unresolved references
 

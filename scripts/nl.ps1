@@ -43,7 +43,7 @@ $script:StagedByNl = $false
 $script:Pos = New-Object System.Collections.Generic.List[string]
 $script:Opt = @{}
 $script:Flags = @{}
-$knownFlags = @("strict","fixture","skip-tests","online","yes","help","h","no-pull","allow-main")
+$knownFlags = @("strict","fixture","skip-tests","online","yes","help","h","no-pull","allow-main","apply","generate","replace")
 for($i = 0; $i -lt $args.Count; $i++){
   $a = [string]$args[$i]
   if($a -match '^--?([A-Za-z][A-Za-z0-9\-]*)$'){
@@ -206,6 +206,29 @@ nl git status | pull | push
   status: branch, upstream, ahead/behind, uncommitted files.  pull: fetch + fast-forward only.
   push: same as 'nl push'.
 "@
+  "issue" = @"
+nl issue --id <id> --principal <principal> --namespaces <ns1,ns2> (--generate | --pubkey <file>) [--key-id <id>] [--consumer <service>]
+  Issue a signing identity: add the principal and one ssh-ed25519 key to the trust bundle.
+  --generate   NeverLost creates the key in proofs/keys/<id>_ed25519 (private key readable only by you,
+               never committed); the service is configured with its path.
+  --pubkey     enroll a public key the service created and keeps.
+  The candidate bundle must verify before it replaces the live one; then allowed_signers is rebuilt, the
+  trust ACL re-applied, a receipt written and proofs/published/ updated (bundle, sha256 to pin, and with
+  --consumer that service's signer list and HANDOFF.md with the exact settings).
+
+nl rotate --id <id> --principal <principal> --namespaces <ns> (--generate | --pubkey <file>)
+  Replace a principal's key; the old key files move to proofs/keys/retired/.
+
+nl revoke --principal <principal> [--key-id <id>]
+  Remove a principal (or one key). The expected principal cannot be revoked; key files are retired.
+
+nl issue-plan [--apply] [--dev-root <folder>]
+  Show config/issuance_plan.v1.json: ISSUED / READY / WAITING for every identity other services wait for.
+  --apply issues every READY item (asks first unless --yes). Issue_Identities.cmd runs this.
+
+nl publish
+  Rewrite proofs/published/ (bundle copy, sha256 to pin, allowed_signers, README) from the current bundle.
+"@
   "version" = @"
 nl version
   Print the CLI version and the tool versions in use.
@@ -216,6 +239,7 @@ function Show-Help([string]$topic){
   if(-not [string]::IsNullOrWhiteSpace($topic)){
     $t = $topic.ToLowerInvariant()
     if($t -in @("start","confirm","end")){ $t = "authority" }
+    if($t -in @("rotate","revoke","issue-plan","publish")){ $t = "issue" }
     if($script:Help.Contains($t)){ Say ""; Say $script:Help[$t]; return }
     Usage-Exit ("no help for '" + $topic + "'")
   }
@@ -240,6 +264,11 @@ function Show-Help([string]$topic){
   Say "  sign --file --namespace --principal --key-id --key [--out]"
   Say "  verify --file --sig --namespace --principal"
   Say "  ledger verify [--strict]"
+  Say ""
+  Say "Identities"
+  Say "  issue-plan [--apply]         what other services wait for; --apply issues every ready identity"
+  Say "  issue --id --principal --namespaces (--generate | --pubkey <file>) [--consumer <svc>]"
+  Say "  rotate ... | revoke --principal <p> [--key-id <k>] | publish"
   Say ""
   Say "Ecosystem and tools"
   Say "  constellation                what NeverLost needs from Constellation and other projects"
@@ -805,6 +834,46 @@ function Cmd-Push(){
   Finish "NEVERLOST_PUSH_OK"
 }
 
+
+function Cmd-Issue([bool]$Rotate){
+  $a = @("-RepoRoot",$RepoRoot,"-Id",(Need "id"),"-Principal",(Need "principal"),"-Namespaces",(Need "namespaces"))
+  if(OptVal "key-id"){ $a += @("-KeyId",(OptVal "key-id")) }
+  if(OptVal "consumer"){ $a += @("-Consumer",(OptVal "consumer")) }
+  if(OptVal "pubkey"){ $a += @("-PubkeyPath",(OptVal "pubkey")) }
+  if(Flag "generate"){ $a += "-Generate" }
+  if($Rotate -or (Flag "replace")){ $a += "-Replace" }
+  exit (Run-Script "issue_identity_v1.ps1" $a)
+}
+
+function Cmd-Revoke(){
+  $a = @("-RepoRoot",$RepoRoot,"-Principal",(Need "principal"))
+  if(OptVal "key-id"){ $a += @("-KeyId",(OptVal "key-id")) }
+  exit (Run-Script "revoke_identity_v1.ps1" $a)
+}
+
+function Cmd-IssuePlan(){
+  $a = @("-RepoRoot",$RepoRoot)
+  if(OptVal "dev-root"){ $a += @("-DevRoot",(OptVal "dev-root")) }
+  if(OptVal "plan"){ $a += @("-PlanPath",(OptVal "plan")) }
+  $code = Run-Script "issue_plan_v1.ps1" $a
+  if($code -ne 0 -or -not (Flag "apply")){ exit $code }
+  if(-not (Flag "yes")){
+    Say ""
+    Say "This adds the READY identities above to the trust bundle. Every service that pinned the old bundle"
+    Say "hash must re-import it afterwards (each service's HANDOFF.md in proofs/published says how)."
+    $answer = Read-Host "Type ISSUE to continue"
+    if($answer -cne "ISSUE"){ Say "Nothing issued."; exit 3 }
+  }
+  exit (Run-Script "issue_plan_v1.ps1" ($a + "-Apply"))
+}
+
+function Cmd-Publish(){
+  $dir = NL-PublishTrustV1 -RepoRoot $RepoRoot
+  Say ("PUBLISHED=" + $dir)
+  Say ("TRUST_BUNDLE_SHA256=" + (NL-Sha256HexFile (Join-Path (Join-Path (Join-Path $RepoRoot "proofs") "trust") "trust_bundle.json")))
+  exit 0
+}
+
 function Cmd-Version(){
   Say ("nl " + $NL_CLI_VERSION)
   Say ("PowerShell " + $PSVersionTable.PSVersion.ToString() + " " + $PSVersionTable.PSEdition)
@@ -848,6 +917,11 @@ try {
     "update"        { Cmd-Update }
     "push"          { Cmd-Push }
     "git"           { switch($sub){ "status" { Cmd-GitStatus } "pull" { Head "Pull"; [void](Do-Pull $true); Finish "" } "push" { Cmd-Push } default { Usage-Exit "use: nl git status | pull | push" } } }
+    "issue"         { Cmd-Issue $false }
+    "rotate"        { Cmd-Issue $true }
+    "revoke"        { Cmd-Revoke }
+    "issue-plan"    { Cmd-IssuePlan }
+    "publish"       { Cmd-Publish }
     "version"       { Cmd-Version }
     default         { Usage-Exit ("unknown command '" + $cmd + "'") }
   }

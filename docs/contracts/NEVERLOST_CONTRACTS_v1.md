@@ -19,6 +19,9 @@ NeverLost at runtime: consumers read published files and recompute what they rel
 | `neverlost.sig.verify.v1` | signature verification | `scripts/verify_sig_v1.ps1` | exit code + receipt | `ssh-keygen -Y verify` | implemented |
 | `neverlost.receipt.v1` | receipt ledger | all NeverLost writers | `schemas/neverlost_receipt_v1.schema.json` | `scripts/verify_receipt_ledger_v1.ps1` | implemented |
 | `neverlost.operator.authority.*.v1` | authority lifecycle | `scripts/neverlost_cli_v1.ps1` | receipt family inside `neverlost.receipt.v1` | ledger verifier (strict field set, provenance chain) | implemented |
+| `neverlost.trust.issue.v1` | issue / rotate an identity | `scripts/issue_identity_v1.ps1` (`nl issue`, `nl rotate`) | receipt in the ledger | `_selftest_neverlost_issue_v1.ps1` | implemented |
+| `neverlost.trust.revoke.v1` | revoke an identity | `scripts/revoke_identity_v1.ps1` (`nl revoke`) | receipt in the ledger | `_selftest_neverlost_issue_v1.ps1` | implemented |
+| `neverlost.issuance_plan.v1` | identities other services wait for | `config/issuance_plan.v1.json` | `scripts/issue_plan_v1.ps1` (`nl issue-plan`) | same | implemented |
 | `neverlost.cli.vector.v1` | test vectors | this repository | `schemas/neverlost_cli_vector_v1.schema.json` | `scripts/verify_neverlost_cli_vectors_v1.ps1` | implemented |
 
 Contract names recorded in Constellation's integration registry map to the ids above as follows:
@@ -155,6 +158,35 @@ scripts/neverlost_cli_v1.ps1 -RepoRoot <root> -Area authority -Action status|sta
 | other | | exit 1 `UNKNOWN_AREA`, `UNKNOWN_ACTION` |
 
 Ending authority does not require valid trust, so an operator can always leave the active state.
+
+## Issuing identities (neverlost.trust.issue.v1 / .revoke.v1)
+
+Principals are issued, rotated and revoked only through NeverLost:
+
+```powershell
+nl issue --id <id> --principal <principal> --namespaces <ns,...> (--generate | --pubkey <file>) [--key-id <id>] [--consumer <service>]
+nl rotate ...            # same arguments; the old key files move to proofs/keys/retired/
+nl revoke --principal <principal> [--key-id <id>]
+nl issue-plan [--apply]  # config/issuance_plan.v1.json; Issue_Identities.cmd
+```
+
+- **Custody.** `--generate`: NeverLost creates the key in `proofs/keys/<id>_ed25519`, restricted to the owner's
+  account and git-ignored; the consuming service is configured with that path. `--pubkey`: the service keeps
+  its own key and NeverLost enrolls the public half.
+- **Fail closed.** The current bundle must verify, the candidate bundle must verify, a key is trusted under
+  one principal only, principals and key ids are unique, the expected principal cannot be revoked and the
+  bundle can never become empty. Refusals change nothing.
+- **Byte stability.** The bundle is rewritten by a serializer that reproduces an unchanged bundle byte for
+  byte, so the hash only changes when content does. New public keys are stored as one LF-terminated line.
+- **After every change** `allowed_signers` is rebuilt, the trust ACL re-applied, a receipt appended and
+  `proofs/published/` refreshed: `trust_bundle.json`, `trust_bundle.sha256` (pin this out of band),
+  `allowed_signers`, `README.md`, and per consumer `<service>/allowed_signers` (that principal only) and
+  `<service>/HANDOFF.md` (the exact settings for that service).
+
+Principal forms in use (closed v1 role set): services `single-tenant/device_agent/<service>`, Courier nodes
+`single-tenant/device_agent/courier/<node-id>`, devices verified by WatchTower
+`single-tenant/device_agent/device/<id>` (confirmed 2026-10-21 for Contribution Ledger and Live State Surgeon;
+it is the SPEC v1 `device/<device_id>` subject), people `single-tenant/<owner|operator|auditor>/user/<name>`.
 
 ## Integration receipts (Constellation proposal 0013)
 

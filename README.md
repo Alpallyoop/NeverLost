@@ -32,8 +32,9 @@ From a terminal in this folder run `nl <command>` (Windows: `nl.cmd`; elsewhere 
 | `Run_Tests.cmd` | `nl test` | every portable proof lane |
 | `Constellation_Needs.cmd` | `nl constellation` | what NeverLost needs from Constellation and other projects |
 | `Doctor.cmd` | `nl doctor` | tools and ecosystem files |
+| `Issue_Identities.cmd` | `nl issue-plan --apply` | shows which signing identities other services wait for, then (after you type ISSUE) creates their keys on this computer, adds them to the trust bundle and writes each service's settings to `proofs/published/<service>/HANDOFF.md` |
 
-Other commands: `nl start | confirm | end`, `nl trust verify | show`, `nl signers make | check | export`,
+Other commands: `nl issue | rotate | revoke | publish`, `nl start | confirm | end`, `nl trust verify | show`, `nl signers make | check | export`,
 `nl sign`, `nl verify`, `nl ledger verify [--strict]`, `nl test tier0 | freeze | workbench`,
 `nl git status | pull | push`, `nl version`.
 

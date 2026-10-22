@@ -33,3 +33,9 @@ Request 1 is implementable now: `scripts/export_allowed_signers_v1.ps1 -RepoRoot
 namespace-restricted `allowed_signers` file with a receipt. What remains is the owner's choice of seal
 principal, namespace, bundle placement and key custody: item C of `0004-trust-root-owner-decisions.md`.
 
+## NeverLost status (2026-10-21)
+
+Owner approved issuing. `config/issuance_plan.v1.json` issues `single-tenant/device_agent/lawvm` with namespace
+`lawvm/receipt-seal` (LawVM's `CH_SEAL_NAMESPACE`), key held by NeverLost (custody under NeverLost's rules, request
+2). LawVM's settings: `proofs/published/lawvm/HANDOFF.md` after `Issue_Identities.cmd` runs.
+
