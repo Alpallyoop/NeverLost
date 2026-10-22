@@ -83,11 +83,14 @@ try {
   Expect-Refused (Issue @("-Id","ghost","-Principal","single-tenant/device_agent/ghost","-Namespaces","selftest/a","-Generate","-Replace")) "ISSUE_REPLACE_UNKNOWN_PRINCIPAL" "replace_unknown"
   # A broken trust root is never extended.
   $good = [System.IO.File]::ReadAllBytes($tb)
+  # Issuing re-applied the trust ACL (owner read-only on Windows); lift it to plant the broken bundle.
+  NL-ResetScratchAcl (Split-Path -Parent $tb)
   Remove-Item -LiteralPath $tb -Force
   [System.IO.File]::WriteAllBytes($tb,(New-Object System.Text.UTF8Encoding($false)).GetBytes('{"schema":"neverlost.trust_bundle.v1","principals":"not-an-array"}'))
   Sync-Sha
   Expect-Refused (Issue @("-Id","on-broken","-Principal","single-tenant/device_agent/on-broken","-Namespaces","selftest/a","-Generate")) "TRUST_BUNDLE_INVALID:PRINCIPALS_NOT_ARRAY" "broken_bundle"
   if(Test-Path -LiteralPath (Join-Path (Join-Path (Join-Path $sb "proofs") "keys") "on-broken_ed25519")){ Die "KEY_CREATED_FOR_BROKEN_BUNDLE" }
+  NL-ResetScratchAcl (Split-Path -Parent $tb)
   Remove-Item -LiteralPath $tb -Force
   [System.IO.File]::WriteAllBytes($tb,$good)
   Write-Output "ISSUE_VECTOR_REFUSALS_OK"
@@ -103,6 +106,15 @@ try {
   $allE = NL-AssertTrustBundleV1 -RepoRoot $sb
   if(@($allE | Where-Object { [string]$_.key_id -ceq "consumer-chosen-id" }).Count -ne 1){ Die "CONSUMER_KEY_ID_NOT_KEPT" }
   Write-Output "ISSUE_VECTOR_ENROLL_OK"
+
+  # 5a. A rotation that fails after retiring the old key puts it back.
+  Sync-Sha
+  $privBefore = NL-Sha256HexFile $priv
+  Expect-Refused (Issue @("-Id","selftest-svc","-Principal",$p1,"-Namespaces","selftest/a,selftest/b","-PubkeyPath",($ext + ".pub"),"-Replace")) "ISSUE_KEY_ALREADY_TRUSTED" "rotate_rollback"
+  if(-not (Test-Path -LiteralPath $priv -PathType Leaf) -or (NL-Sha256HexFile $priv) -cne $privBefore){ Die "ROTATE_ROLLBACK_LOST_KEY" }
+  $retDirT = Join-Path (Join-Path (Join-Path $sb "proofs") "keys") "retired"
+  if((Test-Path -LiteralPath $retDirT) -and @(Get-ChildItem -LiteralPath $retDirT -File).Count -ne 0){ Die "ROTATE_ROLLBACK_LEFT_RETIRED_FILES" }
+  Write-Output "ISSUE_VECTOR_ROLLBACK_OK"
 
   # 5. Rotation: new key verifies, the old key's signature no longer does, old files retired.
   $r = Issue @("-Id","selftest-svc","-Principal",$p1,"-Namespaces","selftest/a,selftest/b","-Generate","-Replace")

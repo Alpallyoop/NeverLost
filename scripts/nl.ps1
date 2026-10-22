@@ -670,7 +670,9 @@ function Cmd-Constellation(){
       if(-not $m.Success){ continue }
       $consumer = $m.Groups[1].Value; $strength = $m.Groups[2].Value; $contracts = $m.Groups[4].Value.Trim()
       $bad = @()
-      foreach($ct in ($contracts -split ',\s*')){ $ct = $ct.Trim(); if($ct -and $ct -ne "None" -and $published -notcontains $ct){ $bad += $ct } }
+      # Only names that claim to be NeverLost's are checked; other services' contracts carried on the
+      # same record (for example soteriavault.attestation.v1) are theirs to publish.
+      foreach($ct in ($contracts -split ',\s*')){ $ct = $ct.Trim(); if($ct -and $ct -ne "None" -and ($ct -like "neverlost.*" -or $ct -like "trust_bundle*" -or $ct -like "trustbundle*") -and $published -notcontains $ct){ $bad += $ct } }
       $label = ("{0,-20} {1,-14} {2}" -f $consumer, $strength, $contracts)
       if($bad.Count -gt 0){ Warn ($label + "   <- not a published contract name: " + ($bad -join ", ")) }
       elseif($contracts -eq "None"){ Info ($label + "   (consumer has not declared contracts)") }
@@ -696,16 +698,26 @@ function Cmd-Constellation(){
     if($status){ Info ("    status: " + $status) }
   }
   Say ""
+  Head "Identities other services wait for (config/issuance_plan.v1.json)"
+  $pr = Capture-Script "issue_plan_v1.ps1" @("-RepoRoot",$RepoRoot)
+  foreach($l in ($pr.Stdout -split "`n")){ if($l -match '^\[(ISSUED |READY  |WAITING)\]'){ Info $l.Trim() } }
+  $sm = [regex]::Match($pr.Stdout,'SUMMARY issued=(\d+) ready=(\d+) waiting=(\d+)')
+  $readyCount = 0; if($sm.Success){ $readyCount = [int]$sm.Groups[2].Value }
+  if($readyCount -gt 0){ Warn ($readyCount.ToString() + " identities are ready to issue: run Issue_Identities.cmd") }
+  elseif($sm.Success){ Ok "no identity is ready and unissued" }
+
+  Say ""
   Say "Summary of what NeverLost needs:"
-  Say "  From Constellation: republish project.contract.json / ECOSYSTEM_INTEGRATION.md with all downstream users;"
-  Say "    rename or re-point the contract names flagged above; drop the reverse 'neverlost -> watchtower' edge;"
-  Say "    ask Contract Registry to stop writing into runtime/ (proposal 0003)."
+  Say "  From Constellation (proposal 0003, docs/HANDOFF_CONSTELLATION_2026-10-21.md): republish"
+  Say "    project.contract.json / ECOSYSTEM_INTEGRATION.md with all downstream users; rename the NeverLost contract"
+  Say "    names flagged above; drop the reverse 'neverlost -> watchtower' edge; Contract Registry stops writing runtime/."
   Say "    Integration receipts (proposal 0013) are written by NeverLost's consumers, not by NeverLost."
-  Say "  From you (owner): CRLF key files, a NeverLost root key and signed bundles, the LawVM seal signer,"
-  Say "    the profiles feature, GOS role/algorithm requests, enabling CI (proposals 0004, 0005)."
-  Say "  From other projects: LawVM picks up the exported signer list; WatchTower takes the archived device"
-  Say "    binding test; PacketPuncture, SoteriaVault and Global Workbench confirm which NeverLost contract they read;"
-  Say "    Covenant Gate, Live State Surgeon, Podsteps and ShutterWall declare their contracts."
+  if($readyCount -gt 0){ Say ("  From you: run Issue_Identities.cmd (" + $readyCount + " ready); then each service's proofs/published/<service>/HANDOFF.md.") }
+  Say "  From you (proposal 0004): CRLF key files, a NeverLost root key and signed bundles, the profiles feature,"
+  Say "    GOS role/algorithm requests; enabling CI (proposal 0005)."
+  Say "  From other projects: Courier node ids, Live State Surgeon device keys and the DoD Witness Kit operator name"
+  Say "    (WAITING items above); Observatory runs OBSERVATORY.cmd setup; WatchTower takes the archived device binding"
+  Say "    test; Covenant Gate, Live State Surgeon, Podsteps and ShutterWall declare their contracts."
   Finish ""
 }
 
